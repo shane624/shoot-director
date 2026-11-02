@@ -142,8 +142,14 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
 .tabs button.on{background:var(--panel2);color:var(--ink)}
 .askrow{display:flex;gap:8px;margin-top:14px;width:min(440px,100%)}
 .askrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
-.phone.live video{transform:var(--mir,none)}
+.phone.live video{transform:var(--vt,none);transform-origin:50% 50%}
 .phone.live canvas{transform:var(--mir,none)}
+.zoombar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.zoombar select{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12.5px;max-width:190px}
+.zoombar input[type=range]{width:min(200px,48vw);accent-color:var(--ice)}
+.zoombar .chip{min-width:44px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font:500 12.5px var(--mono);color:var(--muted);cursor:pointer}
+.zoombar .chip.on{color:#0a1416;background:var(--ice);border-color:var(--ice)}
+.phone.live{touch-action:none}
 .rec{position:absolute;top:10px;right:10px;background:rgba(234,111,95,.92);color:#fff;font:600 11px var(--mono);letter-spacing:.1em;border-radius:999px;padding:4px 9px}
 .prompter{position:absolute;left:8px;right:8px;top:8px;background:rgba(10,20,22,.72);color:#fff;font-family:var(--serif);font-size:20px;line-height:1.2;padding:8px 10px;border-radius:12px;text-align:center}
 .count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:120px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.5);pointer-events:none}
@@ -301,6 +307,12 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
           <button class="btn" id="bPick">Add take</button>
           <button class="btn hidden" id="bKeep">Keep it anyway</button>
           <button class="btn hidden" id="bNext">Next shot</button>
+        </div>
+        <div class="zoombar hidden" id="zoomBar">
+          <select id="lensSel" aria-label="Camera lens" class="hidden"></select>
+          <span id="zChips" style="display:flex;gap:6px"></span>
+          <input type="range" id="zoomR" min="1" max="4" step="0.1" value="1" aria-label="Zoom">
+          <span class="mono" id="zoomV" style="min-width:42px">1.0x</span>
         </div>
         <input type="file" id="fTake" accept="video/*" class="hidden">
         <label class="row muted" style="justify-content:center;font-size:12.5px;margin-top:8px;gap:6px;cursor:pointer"><input type="checkbox" id="autoRec" checked> Live: start recording by itself once the frame is right</label>
@@ -1109,7 +1121,7 @@ Question: ${q}`, { modelTier: 'default' });
 };
 
 /* ---------------- Live camera ---------------- */
-S.live = { on: false, facing: 'user' };
+S.live = { on: false, facing: 'user', deviceId: (() => { try { return localStorage.getItem('sd-lens'); } catch (e) { return null; } })() };
 const lc = document.createElement('canvas'); const lctx = lc.getContext('2d', { willReadFrequently: true });
 function grayFrom(cnv) {
   sc.width = 64; sc.height = Math.max(8, Math.round(64 * cnv.height / cnv.width));
@@ -1119,13 +1131,16 @@ function grayFrom(cnv) {
   return g;
 }
 $('#bLive').onclick = () => S.live.on ? stopLive() : startLive();
-$('#bFlip').onclick = async () => { S.live.facing = S.live.facing === 'user' ? 'environment' : 'user'; await stopLive(true); startLive(); };
+$('#bFlip').onclick = async () => { S.live.deviceId = null; try { localStorage.removeItem('sd-lens'); } catch (e) {} S.live.facing = S.live.facing === 'user' ? 'environment' : 'user'; await stopLive(true); startLive(); };
 $('#bRec').onclick = () => { if (S.live.state === 'recording') stopRecording(); else if (S.live.on) startCountdown(true); };
 async function startLive() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return liveBlocked();
   let stream;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: S.live.facing, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: true });
+    const vc = { width: { ideal: 1080 }, height: { ideal: 1920 }, zoom: true };
+    if (S.live.deviceId) vc.deviceId = { exact: S.live.deviceId }; else vc.facingMode = S.live.facing;
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
+    catch (e1) { delete vc.zoom; if (e1 && e1.name === 'OverconstrainedError') { delete vc.deviceId; vc.facingMode = S.live.facing; S.live.deviceId = null; } stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
   } catch (e) { return liveBlocked(e); }
   if (synth) synth.speak(new SpeechSynthesisUtterance(' '));
   let analyser = null;
@@ -1136,10 +1151,75 @@ async function startLive() {
   Object.assign(S.live, { on: true, stream, analyser, state: 'framing', okSince: null, lastCue: {}, lastCueAt: 0, prevG: null, shakes: [] });
   $('#bLive').textContent = 'Stop live'; $('#bFlip').classList.remove('hidden'); $('#bRec').classList.remove('hidden'); $('#bRec').textContent = 'Record now';
   $('#checks').innerHTML = '';
+  try { const st = stream.getVideoTracks()[0].getSettings(); if (st.facingMode) S.live.facing = st.facingMode === 'user' ? 'user' : 'environment'; } catch (e) {}
   mountLive();
+  await setupZoom();
   await eye;
   speak('Live. Get into position and I will frame you.', 'LIVE');
   liveLoop();
+}
+/* ---------------- Zoom & lens ---------------- */
+async function setupZoom() {
+  const track = S.live.stream.getVideoTracks()[0];
+  let caps = {}; try { caps = track.getCapabilities ? track.getCapabilities() : {}; } catch (e) {}
+  const Z = S.live.zoom = { z: 1, mode: 'digital', min: 1, max: 4, step: .1, busy: false };
+  if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+    Object.assign(Z, { mode: 'hw', min: caps.zoom.min, max: Math.min(caps.zoom.max, 10), step: caps.zoom.step || .1 });
+    try { Z.z = track.getSettings().zoom || Z.min; } catch (e) { Z.z = Z.min; }
+  }
+  const r = $('#zoomR'); r.min = Z.min; r.max = Z.max; r.step = Z.step;
+  const stops = [...new Set([Z.min < 1 ? Z.min : null, 1, 2, 3].filter(v => v != null && v >= Z.min - 1e-6 && v <= Z.max + 1e-6))];
+  $('#zChips').innerHTML = stops.map(v => `<button class="chip" data-z="${v}">${+v.toFixed(1)}x</button>`).join('');
+  $('#zChips').querySelectorAll('button').forEach(b => b.onclick = () => setZoom(+b.dataset.z));
+  // lenses (after permission the labels are readable: Back Ultra Wide Camera, Back Camera, Front Camera...)
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const cur = track.getSettings().deviceId;
+    const sel = $('#lensSel');
+    if (cams.length > 1) {
+      sel.innerHTML = cams.map((c, i) => `<option value="${esc(c.deviceId)}" ${c.deviceId === cur ? 'selected' : ''}>${esc(c.label || 'Camera ' + (i + 1))}</option>`).join('');
+      sel.classList.remove('hidden');
+      sel.onchange = async () => { S.live.deviceId = sel.value; try { localStorage.setItem('sd-lens', sel.value); } catch (e) {} await stopLive(true); startLive(); };
+    } else sel.classList.add('hidden');
+  } catch (e) {}
+  $('#zoomBar').classList.remove('hidden');
+  let saved = null; try { saved = parseFloat(localStorage.getItem('sd-zoom-' + Z.mode)); } catch (e) {}
+  await setZoom(isFinite(saved) && saved ? saved : Z.z);
+}
+async function setZoom(z) {
+  const Z = S.live.zoom; if (!Z) return;
+  Z.z = clamp(+z || 1, Z.min, Z.max);
+  if (Z.mode === 'hw') {
+    if (Z.busy) { Z.pending = Z.z; return updateZoomUI(); }
+    Z.busy = true;
+    try { await S.live.stream.getVideoTracks()[0].applyConstraints({ advanced: [{ zoom: Z.z }] }); }
+    catch (e) { Object.assign(Z, { mode: 'digital', min: 1, max: 4, step: .1 }); Z.z = clamp(Z.z, 1, 4); const r = $('#zoomR'); r.min = 1; r.max = 4; r.step = .1; }
+    Z.busy = false;
+    if (Z.pending != null && Math.abs(Z.pending - Z.z) > .01) { const p = Z.pending; Z.pending = null; return setZoom(p); }
+    Z.pending = null;
+  }
+  applyDigital(); updateZoomUI();
+  try { localStorage.setItem('sd-zoom-' + Z.mode, Z.z); } catch (e) {}
+}
+function dz() { const Z = S.live.zoom; return Z && Z.mode === 'digital' ? Z.z : 1; }
+function applyDigital() {
+  const ph = $('#phone'); if (!ph) return;
+  const mir = S.live.facing === 'user' ? 'scaleX(-1) ' : '';
+  ph.style.setProperty('--vt', mir + `scale(${dz()})`);
+}
+function updateZoomUI() {
+  const Z = S.live.zoom; if (!Z) return;
+  $('#zoomR').value = Z.z; $('#zoomV').textContent = Z.z.toFixed(1) + 'x';
+  $('#zChips').querySelectorAll('button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.z - Z.z) < .05));
+}
+$('#zoomR').addEventListener('input', e => setZoom(e.target.value));
+{
+  let pinch = null;
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const ph = $('#phone');
+  ph.addEventListener('touchstart', e => { if (S.live.on && S.live.zoom && e.touches.length === 2) { pinch = { d: dist(e.touches), z: S.live.zoom.z }; e.preventDefault(); } }, { passive: false });
+  ph.addEventListener('touchmove', e => { if (pinch && e.touches.length === 2) { e.preventDefault(); setZoom(pinch.z * dist(e.touches) / pinch.d); } }, { passive: false });
+  ph.addEventListener('touchend', () => { pinch = null; });
 }
 function liveBlocked() {
   setLine("The camera can't open here. Inside claude.ai the page isn't allowed to use it. Film on your phone and drop the take in, or open Shoot Director from your own site to use live mode.", 'DIRECTOR', 'fail');
@@ -1155,6 +1235,7 @@ function mountLive() {
     <div class="rec hidden" id="recDot">REC <span id="recT">0.0</span></div><div class="count hidden" id="countN"></div>
     <div class="verdict wait"><span id="liveMsg">framing</span><small id="liveTag">LIVE</small></div>`;
   const v = ph.querySelector('video'); v.srcObject = S.live.stream; v.play().catch(() => {});
+  applyDigital();
   S.live.state = 'framing'; S.live.okSince = null; S.live.prevG = null; S.live.shakes = [];
   // give him time to hear the direction and get into place before cues or auto-record
   const words = wordsIn(s.direction) + wordsIn(s.line);
@@ -1167,7 +1248,7 @@ async function stopLive(keepState) {
   if (S.live.stream) S.live.stream.getTracks().forEach(t => t.stop());
   try { S.live.ac && S.live.ac.close(); } catch (e) {}
   S.live.on = false; S.live.state = 'off';
-  $('#bLive').textContent = 'Go live'; $('#bFlip').classList.add('hidden'); $('#bRec').classList.add('hidden');
+  $('#bLive').textContent = 'Go live'; $('#bFlip').classList.add('hidden'); $('#bRec').classList.add('hidden'); $('#zoomBar').classList.add('hidden');
   if (!keepState) { const t = S.takes[shot().id]; if (t) showTake(t); else resetCard(); }
 }
 function liveAudioLevel() {
@@ -1181,7 +1262,7 @@ async function liveLoop() {
   if (!v || v.readyState < 2 || !v.videoWidth || ['checking', 'countdown-hold'].includes(S.live.state)) { S.live.timer = setTimeout(liveLoop, 200); return; }
   const vw = v.videoWidth, vh = v.videoHeight, k = 320 / Math.max(vw, vh);
   lc.width = Math.round(vw * k); lc.height = Math.round(vh * k);
-  lctx.drawImage(v, 0, 0, lc.width, lc.height);
+  { const zf = dz(), cw = vw / zf, ch = vh / zf; lctx.drawImage(v, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, lc.width, lc.height); }
   let face = null, body = null;
   if (human) {
     try {
@@ -1203,6 +1284,11 @@ async function liveLoop() {
   const m = { face, body, all, fs, shake: median(S.live.shakes) || 0, level: liveAudioLevel() };
   const s = shot();
   const a = liveAssess(s, m);
+  const Zs = S.live.zoom;
+  if (Zs) a.issues.forEach(i => {
+    if (/^(tight|feet|head)$/.test(i.key) && Zs.z > Zs.min + .05) i.cue = i.key === 'feet' ? 'Zoom out until I can see your feet.' : 'Zoom out a touch, or step back.';
+    if (i.key === 'loose' && Zs.z < Zs.max - .05) i.cue = 'Zoom in a little, or come closer.';
+  });
   drawLive(a, m);
   const now = performance.now();
   if (S.live.state === 'framing') {
@@ -1303,10 +1389,22 @@ async function startCountdown(manual) {
 function startRecording(s) {
   const types = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
   const mime = types.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '';
-  const rec = new MediaRecorder(S.live.stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : {});
+  let recStream = S.live.stream, stopDraw = null;
+  if (dz() > 1.01) {
+    const v = $('#lv'), rc = document.createElement('canvas');
+    const k = Math.min(1, 1920 / Math.max(v.videoWidth, v.videoHeight));
+    rc.width = Math.round(v.videoWidth * k); rc.height = Math.round(v.videoHeight * k);
+    const rx = rc.getContext('2d'); let running = true;
+    const draw = () => { if (!running) return; const z = dz(), cw = v.videoWidth / z, ch = v.videoHeight / z; rx.drawImage(v, (v.videoWidth - cw) / 2, (v.videoHeight - ch) / 2, cw, ch, 0, 0, rc.width, rc.height); requestAnimationFrame(draw); };
+    draw();
+    recStream = new MediaStream([...rc.captureStream(30).getVideoTracks(), ...S.live.stream.getAudioTracks()]);
+    stopDraw = () => { running = false; recStream.getVideoTracks().forEach(t => t.stop()); };
+  }
+  const rec = new MediaRecorder(recStream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : {});
   const chunks = [];
   rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   rec.onstop = () => {
+    if (stopDraw) stopDraw();
     if (S.live.discard) { S.live.discard = false; return; }
     const type = rec.mimeType || mime || 'video/webm';
     const ext = /mp4/.test(type) ? 'mp4' : 'webm';
