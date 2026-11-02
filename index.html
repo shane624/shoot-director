@@ -1676,7 +1676,7 @@ async function openCamera() {
     const ar = wantPortrait ? 9 / 16 : 16 / 9;
     const cropShort = Math.min(w / h > ar ? h * ar : w, w / h > ar ? h : w / ar); // short side of the usable crop
     const score = cropShort + (portraitOut === wantPortrait ? 10000 : 0);
-    if (score > bestScore) { if (best) best.getTracks().forEach(t => t.stop()); best = st; bestScore = score; }
+    if (score > bestScore) { if (best) best.getTracks().forEach(t => t.stop()); best = st; bestScore = score; S.live.shapeIdx = shapes.indexOf(shape) + 1; }
     else st.getTracks().forEach(t => t.stop());
     if (portraitOut === wantPortrait) break;
   }
@@ -1708,6 +1708,25 @@ async function setupZoom() {
   const stops = [...new Set([Z.min < 1 ? Z.min : null, 1, 2, 3].filter(v => v != null && v >= Z.min - 1e-6 && v <= Z.max + 1e-6))];
   $('#zChips').innerHTML = stops.map(v => `<button class="chip" data-z="${v}">${+v.toFixed(1)}x</button>`).join('');
   $('#zChips').querySelectorAll('button').forEach(b => b.onclick = () => setZoom(+b.dataset.z));
+  // iPhone back lenses come as separate cameras: offer 0.5x (Ultra Wide) and 1x (Back Camera) as lens switches, like the Camera app
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const label = track.label || '';
+    const uw = cams.find(d => /ultra ?wide/i.test(d.label)), wide = cams.find(d => /^back camera$/i.test(d.label.trim()));
+    const lensTo = async id => { if (S.live.state === 'recording') return; S.live.deviceId = id; try { localStorage.setItem('sd-lens', id); localStorage.removeItem('sd-zoom-hw'); localStorage.removeItem('sd-zoom-digital'); } catch (e) {} await stopLive(true); startLive(); };
+    if (uw && S.live.facing !== 'user') {
+      const onUW = /ultra ?wide/i.test(label);
+      const zc = $('#zChips');
+      if (onUW) {
+        zc.innerHTML = `<button class="chip on" data-lens="uw">.5x</button>` + (wide ? `<button class="chip" data-lens="wide">1x</button>` : '');
+        zc.querySelectorAll('[data-lens]').forEach(b => b.onclick = () => { if (b.dataset.lens === 'wide') lensTo(wide.deviceId); });
+      } else {
+        zc.insertAdjacentHTML('afterbegin', `<button class="chip" data-lens="uw">.5x</button>`);
+        zc.querySelector('[data-lens]').onclick = () => lensTo(uw.deviceId);
+      }
+    }
+    S.live.lensLabel = label;
+  } catch (e) {}
   // lenses (after permission the labels are readable: Back Ultra Wide Camera, Back Camera, Front Camera...)
   try {
     const all = await navigator.mediaDevices.enumerateDevices();
@@ -1800,7 +1819,9 @@ function mountLive() {
     ph.style.setProperty('--ar', land ? 16 / 9 : 9 / 16); ph.style.setProperty('--arv', land ? '16 / 9' : '9 / 16');
     ph.style.width = land ? 'min(460px, 94vw)' : '';
     const c = cropRect(v.videoWidth, v.videoHeight), outShort = Math.round(Math.min(c.w, c.h) * dz());
-    $('#camInfo').textContent = `Recording ${land ? 'landscape 16:9' : 'portrait 9:16'} at about ${outShort}p` + (land !== camLand ? (matchMedia('(pointer: coarse)').matches ? ` · turn the phone ${land ? 'sideways' : 'upright'} for full quality` : ' · this camera is landscape; choose Landscape for full quality') : '');
+    const tr = S.live.stream.getVideoTracks()[0]; let zr = ''; try { const cz = tr.getCapabilities && tr.getCapabilities().zoom; if (cz) zr = ` · zoom ${+(+cz.min).toFixed(2)}–${+(+cz.max).toFixed(1)}`; } catch (e) {}
+    $('#camInfo').innerHTML = esc(`Recording ${land ? 'landscape 16:9' : 'portrait 9:16'} at about ${outShort}p` + (land !== camLand ? (matchMedia('(pointer: coarse)').matches ? ` · turn the phone ${land ? 'sideways' : 'upright'} for full quality` : ' · this camera is landscape; choose Landscape for full quality') : '')) +
+      '<br>' + esc(`${tr.label || 'camera'} · sends ${v.videoWidth}×${v.videoHeight} · request ${S.live.shapeIdx ?? '?'}${zr} · crop ${(Math.max(v.videoWidth / c.w, v.videoHeight / c.h) * dz()).toFixed(2)}x`);
     document.querySelectorAll('#orientSeg button').forEach(b => b.classList.toggle('on', b.dataset.o === S.live.orient));
   };
   v.addEventListener('loadedmetadata', fit); v.addEventListener('resize', fit); fit();
