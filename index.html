@@ -3,431 +3,726 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F7F4">
 <title>Shoot Director</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* ============ Shoot Director design system ============ */
 :root{
-  --bg:#0a1416;--panel:#11201f;--panel2:#162a2b;--line:#23393a;
-  --ink:#e8efea;--muted:#88a19d;--ice:#9fd3d6;--gold:#c9a86a;--good:#7fd1a8;--warn:#e3a76b;--bad:#ea6f5f;
-  --mono:"DM Mono",ui-monospace,Menlo,monospace;--serif:"Cormorant Garamond",Georgia,serif;
+  --paper:#F7F7F4; --surface:#FFFFFF; --sunk:#F0EFEA; --line:#E4E3DD; --line2:#D6D5CE;
+  --ink:#17191D; --ink2:#4B5059; --ink3:#868B94;
+  --accent:#5267F5; --accent-ink:#3B4FE0; --accent-weak:#EEF0FE;
+  --green:#2E9E68; --green-weak:#E6F5ED; --amber:#D9922B; --amber-weak:#FBF1E1; --red:#E5483B;
+  --night:#17191D; --night2:#1F2227; --night3:#2A2E35; --night-line:#33373F; --night-ink:#F2F2EE; --night-ink2:#A7ABB3;
+  --r:14px; --r-sm:10px; --r-lg:16px;
+  --shadow:0 1px 2px rgba(23,25,29,.05),0 6px 20px rgba(23,25,29,.06);
+  --shadow-lg:0 2px 6px rgba(23,25,29,.06),0 18px 48px rgba(23,25,29,.12);
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* aliases kept for older inline styles */
+  --muted:var(--ink3); --panel:var(--surface); --panel2:var(--sunk); --ice:var(--accent); --gold:var(--amber); --good:var(--green); --warn:var(--amber); --bad:var(--red);
+  --mono:var(--font); --serif:var(--font);
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "DM Sans",system-ui,sans-serif;min-height:100%}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--font);font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased}
+body.dark{background:var(--night);color:var(--night-ink)}
 button,input,select,textarea{font:inherit;color:inherit}
-.mono{font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;font-size:11.5px}
-.muted{color:var(--muted)}
 .hidden{display:none !important}
-.btn{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer;font-size:14px}
-.btn:hover{border-color:var(--ice)}
-.btn.primary{background:var(--ice);border-color:var(--ice);color:#0a1416;font-weight:600}
-.btn.ghost{background:transparent}
-.btn.danger{border-color:var(--bad);color:var(--bad)}
-.btn:disabled{opacity:.45;cursor:default}
-.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.muted{color:var(--ink3)}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.02em;line-height:1.1}
+h1{font-size:clamp(30px,4.2vw,44px)}
+h2{font-size:clamp(22px,2.6vw,28px)}
+h3{font-size:17px;letter-spacing:-.01em}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.sub{color:var(--ink2);font-size:17px;margin:8px 0 0}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 
-/* top bar */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px 14px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px}
-.brand b{font-family:var(--mono);font-weight:500;letter-spacing:.12em;font-size:13px}
-.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dots{display:flex;gap:7px;align-items:center}
-.dots i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--muted);display:block}
-.dots i.done{background:var(--good);border-color:var(--good)}
-.dots i.now{border-color:var(--ice);box-shadow:0 0 0 3px rgba(159,211,214,.25)}
-.clock{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
-.clock::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--bad)}
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--surface);color:var(--ink);font-weight:550;font-size:15px;cursor:pointer;white-space:nowrap;
+  transition:transform .1s ease-out,background-color .15s,border-color .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.btn:hover{border-color:var(--ink3)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 1px 2px rgba(82,103,245,.3)}
+.btn.primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+.btn.big{min-height:52px;padding:0 24px;font-size:16px;border-radius:14px}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.ghost:hover{background:var(--sunk)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
+.btn.danger{color:var(--red)}
+.ibtn{width:40px;height:40px;border-radius:10px;border:1px solid transparent;background:transparent;display:inline-grid;place-items:center;color:var(--ink2);cursor:pointer;transition:background-color .15s,transform .1s}
+.ibtn:hover{background:var(--sunk)}
+.ibtn:active{transform:scale(.94)}
+.ibtn:disabled{opacity:.3;cursor:default}
+body.dark .btn{background:var(--night3);border-color:var(--night-line);color:var(--night-ink)}
+body.dark .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+body.dark .btn.ghost{background:transparent;border-color:transparent;color:var(--night-ink2)}
+body.dark .btn.ghost:hover{background:var(--night3);color:var(--night-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* plan */
-.plan h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.05;margin:10px 0 6px}
-.plan p.lede{color:var(--muted);max-width:640px;margin:0 0 18px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-.form{display:grid;gap:14px}
-.form label{display:grid;gap:6px}
-.form textarea,.form input,.form select{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
-.form textarea{min-height:90px;resize:vertical}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:700px){.grid3,.grid2{grid-template-columns:1fr}}
-.shotlist{display:grid;gap:10px;margin-top:14px}
-.sl-act{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:12px 0 0}
-.sl{display:grid;grid-template-columns:34px 1fr;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
-.sl .n{font-family:var(--serif);font-size:28px;color:var(--gold);line-height:1}
-.sl .t{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-.sl .d{font-family:var(--serif);font-size:20px;line-height:1.25;margin:4px 0 6px;outline:none;border-radius:6px}
-.sl .d:focus{background:rgba(159,211,214,.06)}
-.sl .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.sl select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 6px;font-size:12.5px}
-.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)}
-.status{font-size:13px;color:var(--muted);min-height:1.4em}
+/* ---------- top bar & production stepper ---------- */
+.topbar{position:sticky;top:0;z-index:20;background:rgba(247,247,244,.86);-webkit-backdrop-filter:blur(16px) saturate(170%);backdrop-filter:blur(16px) saturate(170%);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+body.dark .topbar{background:rgba(23,25,29,.86);border-color:var(--night-line)}
+.topbar-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 24px;min-height:60px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{width:26px;height:26px;border-radius:8px;background:var(--ink);display:grid;place-items:center;flex:none}
+body.dark .brand .mark{background:var(--night-ink)}
+.brand .mark i{width:9px;height:9px;border-radius:50%;background:var(--red)}
+.brand b{font-weight:650;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand .proj{color:var(--ink3);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22vw}
+.steps{display:flex;align-items:center;gap:4px;margin:0 auto}
+.steps button{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:8px 12px;border-radius:10px;cursor:pointer;color:var(--ink3);font-weight:550;font-size:14px;min-height:40px;transition:background-color .15s,color .15s}
+.steps button:hover:not(:disabled){background:var(--sunk);color:var(--ink)}
+body.dark .steps button:hover:not(:disabled){background:var(--night3);color:var(--night-ink)}
+.steps button.on{color:var(--ink);background:var(--surface);box-shadow:var(--shadow)}
+body.dark .steps button.on{color:var(--night-ink);background:var(--night3);box-shadow:none}
+.steps button:disabled{opacity:.45;cursor:default}
+.steps .sn{font-size:11.5px;font-weight:650;letter-spacing:.04em;font-variant-numeric:tabular-nums;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:1.5px solid currentColor}
+.steps button.on .sn{background:var(--accent);border-color:var(--accent);color:#fff}
+.steps button.done .sn{background:var(--green);border-color:var(--green);color:#fff}
+.steps .sep{width:22px;height:1.5px;background:var(--line2);border-radius:1px}
+body.dark .steps .sep{background:var(--night-line)}
+.steps .prog{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.top-r{display:flex;align-items:center;gap:6px}
+.clock{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--night-ink2);display:flex;align-items:center;gap:6px}
+.clock::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber)}
+@media (max-width:760px){
+  .topbar-in{padding:8px 12px;gap:8px;min-height:54px}
+  .brand b,.brand .proj{display:none}
+  .steps{margin:0 auto 0 0}
+  .steps button{padding:6px 8px;gap:6px;font-size:13px}
+  .steps .sep{width:10px}
+  .steps .lbl-long{display:none}
+}
+@media (max-width:760px){.brand{display:none}}
+@media (max-width:560px){.steps button:not(.on) .lbl{display:none}.steps .sep{width:8px}}
 
-/* shoot */
-.stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:center;min-height:62vh}
-@media(max-width:860px){.stage{grid-template-columns:1fr;min-height:0}}
-.director{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 6px}
-.orbwrap{position:relative;width:min(240px,52vw);aspect-ratio:1;display:grid;place-items:center}
-.orbwrap::before,.orbwrap::after{content:"";position:absolute;inset:4%;border-radius:50%;border:1px solid rgba(232,239,234,.12)}
-.orbwrap::after{inset:-3%;border-color:rgba(232,239,234,.06)}
-.orb{--core:#cfeef0;--mid:#4f9fb4;--edge:#2a4a66;width:62%;aspect-ratio:1;border-radius:50%;
-  background:radial-gradient(circle at 50% 48%,var(--core) 0 28%,var(--mid) 52%,var(--edge) 66%,transparent 72%);
-  filter:blur(3px) saturate(1.1);animation:breathe 4.5s ease-in-out infinite;transition:--core .4s}
-.orb.speak{animation:talk .55s ease-in-out infinite alternate}
-.orb.check{--core:#8fd3ff;--mid:#ff4f8f;--edge:#5a2250;animation:spin 1.6s linear infinite}
-.orb.pass{--core:#e3fff0;--mid:#5fcf9a;--edge:#245c4a}
-.orb.fail{--core:#ffd6cc;--mid:#ea6f5f;--edge:#5c2a2a}
-.ring{position:absolute;inset:-8%;border-radius:50%;border:1px solid rgba(255,79,143,.35);opacity:0}
-.check ~ .ring{opacity:1;animation:ripple 1.6s ease-out infinite}
-@keyframes breathe{50%{transform:scale(1.06)}}
-@keyframes talk{from{transform:scale(1)}to{transform:scale(1.12)}}
-@keyframes spin{to{transform:rotate(360deg) scale(1.04)}}
-@keyframes ripple{from{transform:scale(.8);opacity:.8}to{transform:scale(1.15);opacity:0}}
-@media (prefers-reduced-motion:reduce){.orb,.ring{animation:none !important}}
-.dstate{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:var(--muted);margin-top:16px}
-.dline{font-family:var(--serif);font-size:clamp(24px,3.2vw,36px);line-height:1.15;margin:8px 0 0;max-width:30ch;min-height:2.4em}
-.dline .dim{opacity:.55}
-.dctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+/* ---------- layout ---------- */
+.wrap{max-width:1240px;margin:0 auto;padding:40px 24px 120px}
+@media (max-width:760px){.wrap{padding:24px 16px 120px}}
+.view{animation:viewIn .28s cubic-bezier(.2,.8,.25,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+.pad{padding:24px}
+@media (max-width:760px){.pad{padding:16px}}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.spread{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.status{font-size:14px;color:var(--ink2);min-height:1.4em}
+.status.err{color:var(--red)}
+label.field{display:grid;gap:6px;font-size:13px;font-weight:550;color:var(--ink2)}
+.field input,.field select,.field textarea,.inp{width:100%;min-height:44px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font-size:15px;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus,.field textarea:focus,.inp:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(82,103,245,.15)}
+select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23868B94' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px !important}
+textarea{resize:vertical}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink2);cursor:pointer;transition:border-color .15s,background-color .15s,transform .1s}
+.chip:hover{border-color:var(--accent);color:var(--accent-ink)}
+.chip:active{transform:scale(.97)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;background:var(--sunk);color:var(--ink2);white-space:nowrap}
+.tag.aroll{background:var(--accent-weak);color:var(--accent-ink)}
+.tag.broll{background:var(--sunk);color:var(--ink2)}
+.tag.filmed,.tag.ok{background:var(--green-weak);color:var(--green)}
+.tag.tofilm,.tag.pending{background:var(--amber-weak);color:#9A6315}
+.tag i{width:6px;height:6px;border-radius:50%;background:currentColor}
 
-.take{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap}
-.phone{position:relative;width:min(250px,64vw);aspect-ratio:9/16;border-radius:22px;overflow:hidden;background:#0d1b1d;border:1px solid var(--line);flex:none}
-.phone.drop{border:1.5px dashed #4a6366;display:grid;place-items:center;text-align:center;cursor:pointer;padding:16px}
-.phone.drop.over{border-color:var(--ice)}
-.phone.drop .up{width:54px;height:54px;border-radius:50%;border:1.5px solid var(--ice);display:grid;place-items:center;margin:0 auto 12px;color:var(--ice);font-size:22px}
-.phone.drop .big{font-family:var(--serif);font-size:24px}
-.phone.drop .hint{font-size:12.5px;color:var(--muted);margin-top:10px}
+/* ---------- 01 script ---------- */
+.script-head{max-width:760px}
+.story-box{margin-top:24px;max-width:860px}
+.story-box textarea{width:100%;min-height:200px;border:0;outline:0;background:transparent;font-size:19px;line-height:1.55;padding:24px 24px 8px;color:var(--ink);resize:vertical}
+.story-box textarea::placeholder{color:#A9ADB4}
+.story-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 16px 16px 24px;flex-wrap:wrap}
+.story-opts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;max-width:860px}
+@media (max-width:760px){.story-opts{grid-template-columns:1fr 1fr}.story-box textarea{font-size:17px;padding:16px 16px 8px;min-height:180px}.story-foot{padding:8px 12px 12px 16px}}
+.gen-row{display:flex;gap:12px;align-items:center;margin-top:24px;flex-wrap:wrap}
+.side-links{display:flex;gap:4px;margin-left:auto}
+@media (max-width:760px){.gen-row .btn.primary{width:100%}.side-links{margin-left:0;width:100%;justify-content:center}}
+
+/* script editor */
+.editor{margin-top:40px;max-width:980px}
+.ed-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;padding:24px 24px 16px;border-bottom:1px solid var(--line)}
+.ed-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ed-tools{display:flex;gap:2px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--paper);border-radius:0}
+.ed-tools .btn{min-height:36px;font-size:13.5px;padding:0 10px}
+.hooks{padding:16px 24px 8px}
+.hook{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer;transition:border-color .15s,background-color .15s}
+.hook:hover{border-color:var(--line2)}
+.hook.on{border-color:var(--accent);background:var(--accent-weak)}
+.hook .radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--line2);flex:none;margin-top:2px;display:grid;place-items:center}
+.hook.on .radio{border-color:var(--accent)}
+.hook.on .radio::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.hook .say{font-size:17px;font-weight:550;line-height:1.35}
+.hook .meta{font-size:13px;color:var(--ink3);margin-top:3px}
+.beats{padding:8px 24px 16px}
+.part{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
+.part:first-child{border-top:0}
+.part-lbl{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;padding-top:9px}
+.part-lbl.k-hook{color:var(--accent-ink)} .part-lbl.k-story{color:var(--ink2)} .part-lbl.k-payoff{color:var(--green)} .part-lbl.k-cta{color:#9A6315}
+.beat{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:6px 8px;margin:0 -8px;border-radius:10px;transition:background-color .15s}
+.beat:hover{background:var(--paper)}
+.beat .tm{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink3);padding-top:4px}
+.beat .say{font-size:17px;line-height:1.45;outline:none;border-radius:6px;padding:2px 4px;margin:0 -4px}
+.beat .say:focus{background:var(--surface);box-shadow:0 0 0 2px rgba(82,103,245,.35)}
+.beat .meta{font-size:13px;color:var(--ink3);margin:2px 0 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.beat .warn{font-size:12.5px;color:#9A6315;margin-top:2px}
+@media (max-width:760px){.part{grid-template-columns:1fr;gap:4px}.part-lbl{padding-top:0}.beat{grid-template-columns:44px 1fr}.hooks,.beats{padding-left:16px;padding-right:16px}.ed-head{padding:16px}}
+.ed-foot{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;padding:16px 24px;border-top:1px solid var(--line);background:var(--paper);border-radius:0 0 var(--r-lg) var(--r-lg)}
+.ed-notes{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 24px 20px;font-size:14px;color:var(--ink2)}
+@media (max-width:760px){.ed-notes{grid-template-columns:1fr;padding:0 16px 16px}.ed-foot .btn.primary{width:100%}}
+/* skeleton */
+.skel{padding:24px}
+.sk{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--sunk) 0%,#F8F7F3 50%,var(--sunk) 100%);background-size:200% 100%;animation:sk 1.3s ease-in-out infinite;margin:12px 0}
+@keyframes sk{from{background-position:100% 0}to{background-position:-100% 0}}
+.sk.w60{width:60%}.sk.w80{width:80%}.sk.w40{width:40%}.sk.h24{height:24px}
+.gen-status{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink2)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- drawers ---------- */
+.scrim{position:fixed;inset:0;background:rgba(23,25,29,.32);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);z-index:41;background:var(--surface);box-shadow:var(--shadow-lg);
+  transform:translateX(102%);visibility:hidden;transition:transform .34s cubic-bezier(.2,.9,.25,1),visibility 0s .34s;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.drawer.on{transform:none;visibility:visible;transition:transform .34s cubic-bezier(.2,.9,.25,1)}
+.drawer-h{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 12px 24px;border-bottom:1px solid var(--line)}
+.drawer-b{padding:16px 24px 32px;overflow:auto;flex:1;padding-bottom:calc(32px + env(safe-area-inset-bottom))}
+@media (max-width:760px){
+  .drawer{top:auto;left:0;width:100%;max-height:88dvh;border-radius:20px 20px 0 0;transform:translateY(102%)}
+  .drawer.on{transform:none}
+  .drawer-h::before{content:"";position:absolute;left:50%;top:8px;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:var(--line2)}
+  .drawer-h{position:relative;padding-top:20px}
+}
+.libitem{display:grid;grid-template-columns:1fr;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
+.libitem:first-child{border-top:0}
+.libitem .hk{font-size:15px;line-height:1.35;color:var(--ink2)}
+.libitem .acts{display:flex;gap:6px;flex-wrap:wrap}
+.copy{width:100%;min-height:120px;margin-top:10px;border:1px solid var(--line2);border-radius:12px;padding:10px;font:13px/1.45 ui-monospace,Menlo,monospace;background:var(--paper)}
+.sect{margin-top:24px}
+.sect:first-child{margin-top:0}
+.sect-t{font-size:13px;font-weight:650;color:var(--ink2);margin:0 0 8px}
+
+/* ---------- 02 shot list ---------- */
+.empty{max-width:760px}
+.paths{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.path{padding:20px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+.path:hover{border-color:var(--accent);box-shadow:var(--shadow-lg)}
+.path:active{transform:scale(.99)}
+.path .ico{width:40px;height:40px;border-radius:12px;background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;margin-bottom:12px}
+.path h3{margin-bottom:4px}
+.path p{margin:0;color:var(--ink2);font-size:14px}
+@media (max-width:760px){.paths{grid-template-columns:1fr}}
+.planform{margin-top:16px;max-width:860px}
+.planform .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.planform .grid{grid-template-columns:1fr}}
+.plan-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.plan-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.timeline{display:flex;gap:4px;margin:24px 0 8px;height:8px}
+.timeline span{border-radius:4px;background:var(--line2);position:relative}
+.timeline span.a0{background:#8C9AF8}.timeline span.a1{background:var(--accent)}.timeline span.a2{background:#2A3BB8}.timeline span.a3{background:#141E6E}
+.tl-labels{display:flex;gap:4px;font-size:12px;color:var(--ink3)}
+.tl-labels span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.act{margin-top:32px}
+.act-h{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.act-h .an{font-size:12px;font-weight:650;letter-spacing:.08em;color:var(--ink3);text-transform:uppercase}
+.act-h h3{font-size:20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.shot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.shot:hover{box-shadow:var(--shadow-lg)}
+.shot.aroll{border-top:3px solid var(--accent)}
+.shot.broll{border-top:3px solid var(--line2)}
+.shot-top{display:flex;gap:14px;padding:16px 16px 12px}
+.frame{width:62px;flex:none;aspect-ratio:9/16;border-radius:8px;background:var(--night);display:grid;place-items:center;overflow:hidden}
+.frame svg{width:100%;height:100%}
+.shot-id{min-width:0;flex:1}
+.shot-no{font-size:12px;font-weight:650;color:var(--ink3);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.shot-t{font-size:16px;font-weight:650;letter-spacing:-.01em;margin:2px 0 6px}
+.shot-tags{display:flex;gap:6px;flex-wrap:wrap}
+.shot-b{padding:0 16px 12px;flex:1}
+.shot-dir{font-size:15px;line-height:1.45;outline:none;border-radius:8px;padding:6px 8px;margin:0 -8px;transition:background-color .15s}
+.shot-dir:hover{background:var(--paper)}
+.shot-dir:focus{background:var(--surface);box-shadow:0 0 0 2px rgba(82,103,245,.35)}
+.shot-say{margin:8px 0 0;padding:8px 10px;border-left:3px solid var(--accent);background:var(--accent-weak);border-radius:0 8px 8px 0;font-size:14.5px;line-height:1.4}
+.shot-say .ln{outline:none}
+.shot-cam{display:flex;gap:6px;align-items:flex-start;font-size:13px;color:var(--ink2);margin-top:8px}
+.shot-cam svg{margin-top:2px;width:15px;height:15px}
+.shot-f{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 8px 8px 16px;border-top:1px solid var(--line);background:var(--paper)}
+.shot-f .ctl{display:flex;gap:2px}
+.shot-more{display:none;padding:12px 16px;border-top:1px solid var(--line);gap:10px;grid-template-columns:1fr 1fr}
+.shot.open .shot-more{display:grid;animation:viewIn .2s ease-out}
+.shot-more select{width:100%;min-height:40px;border:1px solid var(--line2);border-radius:10px;padding:0 10px;font-size:14px;background-color:var(--surface)}
+.plan-cta{position:sticky;bottom:0;margin-top:32px;padding:16px 0 calc(16px + env(safe-area-inset-bottom));background:linear-gradient(rgba(247,247,244,0),var(--paper) 30%);display:flex;justify-content:flex-end;gap:12px;z-index:5}
+@media (max-width:760px){.plan-cta .btn.primary{flex:1}}
+
+/* ---------- 03 record (director's monitor) ---------- */
+.rec-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:900px){.rec-grid{grid-template-columns:1fr;gap:20px}}
+.monitor{position:relative;display:flex;justify-content:center}
+.brief{display:flex;flex-direction:column;gap:16px}
+.shotno{font-size:13px;font-weight:650;letter-spacing:.14em;color:var(--night-ink2);font-variant-numeric:tabular-nums}
+.shotno b{color:var(--night-ink)}
+.framing-lbl{font-size:15px;color:var(--night-ink2);margin-top:4px}
+.dir-card{background:var(--night2);border:1px solid var(--night-line);border-radius:var(--r-lg);padding:20px}
+.dir-who{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--night-ink2)}
+.orb{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(82,103,245,.5)}
+.orb.speak{animation:talk 1s ease-out infinite}
+.orb.check{background:var(--amber);animation:talk 1s ease-out infinite}
+.orb.pass{background:var(--green)} .orb.fail{background:var(--amber)}
+@keyframes talk{0%{box-shadow:0 0 0 0 rgba(82,103,245,.5)}100%{box-shadow:0 0 0 10px rgba(82,103,245,0)}}
+.dline{font-size:clamp(22px,2.6vw,30px);line-height:1.25;font-weight:550;letter-spacing:-.015em;margin:10px 0 0;color:var(--night-ink)}
+.dcraft{font-size:14px;color:var(--night-ink2);margin:10px 0 0}
+.saybox{font-size:18px;line-height:1.4;padding:12px 14px;border-left:3px solid var(--accent);background:rgba(82,103,245,.12);border-radius:0 10px 10px 0;margin-top:12px}
+.rec-actions{display:flex;gap:12px;flex-wrap:wrap}
+.rec-actions .btn{flex:1 1 auto}
+.rec-actions .btn.primary{flex:1;min-width:200px}
+.minor{display:flex;gap:4px;flex-wrap:wrap;border-top:1px solid var(--night-line);padding-top:12px}
+.minor .btn{min-height:40px;font-size:13.5px;padding:0 10px}
+.askrow{display:flex;gap:8px}
+.askrow input{flex:1;min-height:44px;background:var(--night2);border:1px solid var(--night-line);border-radius:12px;padding:0 14px;color:var(--night-ink)}
+.askrow input:focus{outline:0;border-color:var(--accent)}
+.loading{font-size:13px;color:var(--night-ink2)}
+.no-ai .ai-only{display:none !important}
+/* phone / take monitor */
+.phone{position:relative;width:min(340px,82vw);aspect-ratio:9/16;border-radius:20px;overflow:hidden;background:#0B0C0E;border:1px solid var(--night-line);flex:none}
+.phone.drop{display:grid;place-items:center;text-align:center;cursor:pointer;padding:24px;border-style:dashed;border-color:#3A3F48;transition:border-color .15s,background-color .15s}
+.phone.drop:hover,.phone.drop.over{border-color:var(--accent);background:#101217}
+.phone.drop .up{width:56px;height:56px;border-radius:50%;background:var(--night3);display:grid;place-items:center;margin:0 auto 14px;color:var(--night-ink)}
+.phone.drop .big{font-size:18px;font-weight:600;color:var(--night-ink)}
+.phone.drop .hint{font-size:13.5px;color:var(--night-ink2);margin-top:8px;line-height:1.45}
 .phone video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 .phone canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.verdict{position:absolute;left:10px;right:10px;bottom:10px;border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-family:var(--serif);font-size:22px;color:#0a1416}
-.verdict small{font-family:var(--mono);font-size:10px;letter-spacing:.14em;opacity:.7}
-.verdict.ok{background:rgba(127,209,168,.92)}
-.verdict.no{background:rgba(234,111,95,.93)}
-.verdict.wait{background:rgba(159,211,214,.85)}
-.checks{width:min(260px,100%);font-size:13.5px}
-.checks h4{font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 6px}
-.ck{border-top:1px solid var(--line);padding:7px 0}
-.ck .r{display:flex;justify-content:space-between;gap:10px}
-.ck .v{font-family:var(--mono);font-size:12px}
-.ck.ok .v{color:var(--good)}
-.ck.warn .v{color:var(--warn)}
-.ck.fail .v{color:var(--bad)}
-.ck .note{font-family:var(--mono);font-size:10.5px;color:var(--bad);margin-top:2px;text-transform:none;letter-spacing:0}
-.ck.warn .note{color:var(--warn)}
-.ck.neutral .v{color:var(--muted)}
-.takectl{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-
-.rails{display:grid;grid-template-columns:repeat(var(--acts,3),minmax(0,1fr));gap:10px;margin-top:20px}
-@media(max-width:700px){.rails{grid-template-columns:1fr}}
-.rail{border:1px solid var(--line);border-radius:999px;padding:7px 10px 7px 16px;display:flex;align-items:center;gap:10px;background:var(--panel)}
-.rail .nm{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
-.rail .slots{display:flex;gap:5px;flex:1}
-.rail .slot{width:26px;height:36px;border-radius:6px;border:1px solid var(--line);overflow:hidden;background:var(--panel2);cursor:pointer;padding:0}
-.rail .slot img{width:100%;height:100%;object-fit:cover;display:block}
-.rail .slot.now{border-color:var(--ice)}
-.rail .ct{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-.loading{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
-
-/* done */
-.done h1{font-family:var(--serif);font-size:42px;margin:12px 0 4px;font-weight:600}
-.files{display:grid;gap:8px;margin-top:14px}
-.file{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px}
-.file img{width:44px;height:60px;object-fit:cover;border-radius:6px;background:#000}
-.file .fn{font-family:var(--mono);font-size:12.5px;word-break:break-all}
-.progress{height:4px;border-radius:2px;background:var(--panel2);overflow:hidden;margin-top:10px}
-.progress i{display:block;height:100%;width:0;background:var(--ice)}
-textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;font:12.5px/1.45 var(--mono);color:var(--ink);margin-top:10px}
-.no-ai .ai-only{display:none !important}
-.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
-.tabs button{background:transparent;border:0;border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--muted);cursor:pointer;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.tabs button.on{background:var(--panel2);color:var(--ink)}
-.askrow{display:flex;gap:8px;margin-top:14px;width:min(440px,100%)}
-.askrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
 .phone.live video{transform:var(--vt,none);transform-origin:50% 50%;object-fit:cover}
 .phone.live canvas{transform:var(--mir,none)}
-.zoombar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
-.zoombar select{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12.5px;max-width:190px}
-.zoombar input[type=range]{width:min(200px,48vw);accent-color:var(--ice)}
-.zoombar .chip{min-width:44px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font:500 12.5px var(--mono);color:var(--muted);cursor:pointer}
-.zoombar .chip.on{color:#0a1416;background:var(--ice);border-color:var(--ice)}
 .phone.live{touch-action:none}
-.micmeter{display:inline-block;width:60px;height:8px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
-.micmeter i{display:block;height:100%;width:0;background:var(--good);transition:width .1s linear}
-.rec{position:absolute;top:10px;right:10px;background:rgba(234,111,95,.92);color:#fff;font:600 11px var(--mono);letter-spacing:.1em;border-radius:999px;padding:4px 9px}
-.prompter{position:absolute;left:8px;right:8px;top:8px;background:rgba(10,20,22,.72);color:#fff;font-family:var(--serif);font-size:20px;line-height:1.2;padding:8px 10px;border-radius:12px;text-align:center}
-.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:120px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.5);pointer-events:none}
-.libitem{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
-.libitem:first-child{border-top:0}
-.libitem .hk{font-family:var(--serif);font-size:18px;line-height:1.25;margin-top:4px}
-.libitem .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.libitem .btn{padding:6px 12px;font-size:13px}
-.tag.filmed{color:var(--good);border-color:var(--good)}
-.tag.tofilm{color:var(--gold);border-color:var(--gold)}
-@media(max-width:700px){.libitem{grid-template-columns:1fr}.libitem .acts{justify-content:flex-start}}
-.beat{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
-.beat .tm{font-family:var(--mono);font-size:12px;color:var(--gold)}
-.beat .say{font-family:var(--serif);font-size:21px;line-height:1.25;outline:none}
-.beat .meta{font-size:12.5px;color:var(--muted);margin-top:4px}
-.beat .warn{font-size:12px;color:var(--warn)}
-.hook{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer}
-.hook.on{border-color:var(--gold);background:rgba(201,168,106,.06)}
-.hook .say{font-family:var(--serif);font-size:20px;line-height:1.2}
+.verdict{position:absolute;left:12px;right:12px;bottom:12px;border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:17px;font-weight:600;color:#fff;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.verdict small{font-size:11px;font-weight:650;letter-spacing:.1em;opacity:.85}
+.verdict.ok{background:rgba(46,158,104,.88)}
+.verdict.no{background:rgba(217,146,43,.92)}
+.verdict.wait{background:rgba(42,46,53,.8)}
+.verdict.ok.pop{animation:pop .45s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pop{0%{transform:scale(.92);opacity:.4}100%{transform:none;opacity:1}}
+.rec{position:absolute;top:12px;right:12px;background:var(--red);color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.rec::before{content:"";width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.prompter{position:absolute;left:10px;right:10px;top:10px;background:rgba(23,25,29,.78);color:#fff;font-size:19px;font-weight:550;line-height:1.3;padding:10px 12px;border-radius:12px;text-align:center}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-size:120px;font-weight:700;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.5);pointer-events:none}
+/* checks */
+.checks{background:var(--night2);border:1px solid var(--night-line);border-radius:var(--r-lg);padding:8px 16px}
+.checks:empty{display:none}
+.checks h4{margin:8px 0 4px;font-size:13px;font-weight:650;color:var(--night-ink2)}
+.ck{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:9px 0;border-top:1px solid var(--night-line);font-size:14.5px}
+.ck:first-of-type{border-top:0}
+.ck .dot{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:1px}
+.ck.ok .dot{background:rgba(46,158,104,.18);color:#5BD199}
+.ck.warn .dot{background:rgba(217,146,43,.18);color:#F0B65C}
+.ck.fail .dot{background:rgba(217,146,43,.28);color:#FFC46B}
+.ck.neutral .dot{background:var(--night3);color:var(--night-ink2)}
+.ck .v{font-variant-numeric:tabular-nums;color:var(--night-ink2);font-size:13.5px}
+.ck.fail .v{color:#FFC46B}
+.ck .note{grid-column:2/4;font-size:13.5px;color:#F0C98A;margin-top:-2px}
+.ck.warn .note{color:var(--night-ink2)}
+.takectl{display:flex;gap:10px;flex-wrap:wrap}
+/* shot strip */
+.strip{margin-top:40px}
+.strip-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.rails{display:flex;gap:20px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.rail{display:flex;flex-direction:column;gap:8px;flex:none}
+.rail .nm{font-size:12px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--night-ink2)}
+.rail .slots{display:flex;gap:8px}
+.rail .slot{width:52px;aspect-ratio:9/16;border-radius:8px;border:1.5px solid var(--night-line);background:var(--night2);overflow:hidden;cursor:pointer;padding:0;position:relative;display:grid;place-items:center;color:var(--night-ink2);font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;transition:border-color .15s,transform .1s}
+.rail .slot:active{transform:scale(.96)}
+.rail .slot img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.rail .slot.now{border-color:var(--accent);box-shadow:0 0 0 2px rgba(82,103,245,.35)}
+.rail .slot.done::after{content:"";position:absolute;right:3px;bottom:3px;width:14px;height:14px;border-radius:50%;background:var(--green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-9'/%3E%3C/svg%3E") center/9px no-repeat}
+.rail .ct{display:none}
+@media (max-width:900px){.strip{margin-top:24px}}
 
-/* ---------- feel: instant press feedback, thumb-sized targets ---------- */
-.btn,.chip,.cbtn,.shutter,.tabs button,.seg button{transition:transform .1s ease-out,background-color .15s,border-color .15s,color .15s;-webkit-tap-highlight-color:transparent}
-.btn:active,.chip:active,.cbtn:active,.tabs button:active,.seg button:active{transform:scale(.96)}
-.btn.big{padding:13px 26px;font-size:16px}
-@media (pointer:coarse){.btn{min-height:44px}.tabs button{min-height:36px}}
-.tabs .n{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1px solid currentColor;font-size:10px;margin-right:4px;letter-spacing:0}
-.tabs button:disabled{opacity:.4}
-h1{letter-spacing:-.015em}
-.wrap{padding-top:max(16px,env(safe-area-inset-top))}
+/* ---------- finish ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
+.stat{padding:16px 18px}
+.stat .k{font-size:13px;color:var(--ink2)}
+.stat .v{font-size:30px;font-weight:650;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:16px;color:var(--ink3);font-weight:550}
+@media (max-width:760px){.stats{grid-template-columns:1fr 1fr}}
+.fm{margin-top:24px;overflow:hidden}
+.fm-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--paper)}
+.folder{border-top:1px solid var(--line)}
+.folder:first-child{border-top:0}
+.folder-h{display:flex;align-items:center;gap:10px;padding:12px 20px;font-weight:600;font-size:14px}
+.folder-h svg{color:var(--accent)}
+.file{display:grid;grid-template-columns:36px 1fr auto auto;gap:14px;align-items:center;padding:10px 20px 10px 44px;border-top:1px solid var(--line);font-size:14px}
+.file img{width:36px;height:52px;object-fit:cover;border-radius:6px;background:var(--sunk)}
+.file .fn{font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all}
+.file .fd{color:var(--ink3);font-variant-numeric:tabular-nums;font-size:13px}
+.file.missing{color:var(--ink3)}
+.file.missing .ph{width:36px;height:52px;border-radius:6px;border:1.5px dashed var(--line2)}
+@media (max-width:760px){.file{grid-template-columns:32px 1fr auto;padding-left:20px}.file .fs{display:none}}
+.progress{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;margin-top:12px}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,12px);background:var(--ink);color:#fff;border-radius:12px;padding:12px 16px;font-weight:550;font-size:14px;opacity:0;transition:opacity .2s,transform .25s cubic-bezier(.2,.9,.25,1);pointer-events:none;z-index:90;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow-lg);max-width:calc(100vw - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
 
 /* ---------- full-screen camera ---------- */
 #camBack,.camui,#camScrim,#camSheet{display:none}
 body.camfull{overflow:hidden}
 body.camfull #camBack{display:block;position:fixed;inset:0;background:#000;z-index:50}
 body.camfull .camui{display:flex}
-body.camfull #phone{position:fixed;z-index:51;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%);
-  width:min(100vw,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 64px - 176px) * var(--ar,.5625))) !important;
+body.camfull #phone{position:fixed;z-index:51;left:50%;top:calc(env(safe-area-inset-top) + 92px);transform:translateX(-50%);
+  width:min(100vw,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 92px - 176px) * var(--ar,.5625))) !important;
   aspect-ratio:var(--arv,9/16) !important;border-radius:16px;border:0}
-#camTop{position:fixed;top:0;left:0;right:0;z-index:52;align-items:flex-start;gap:10px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
-  background:linear-gradient(#000c,#0000)}
+#camTop{position:fixed;top:0;left:0;right:0;z-index:52;align-items:flex-start;gap:12px;padding:calc(env(safe-area-inset-top) + 10px) 12px 8px;background:linear-gradient(#000e,#0000)}
 .ctitle{flex:1;min-width:0;text-align:center;color:#fff}
-#camShot{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#camLine{font-family:var(--serif);font-size:17px;line-height:1.2;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.cbtn{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;color:#fff;cursor:pointer;
-  background:rgba(40,44,46,.55);-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);flex:none}
-#camBottom{position:fixed;left:0;right:0;bottom:0;z-index:52;flex-direction:column;align-items:center;gap:12px;
-  padding:10px 20px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(#0000,#000d 40%)}
+#camShot{font-size:13px;font-weight:700;letter-spacing:.14em;font-variant-numeric:tabular-nums}
+#camFraming{font-size:13px;color:#C9CCD2;margin-top:1px}
+#camLine{font-size:19px;font-weight:600;line-height:1.25;letter-spacing:-.01em;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cbtn{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;color:#fff;cursor:pointer;background:rgba(48,52,58,.6);-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);flex:none;transition:transform .1s}
+.cbtn:active{transform:scale(.94)}
+#camBottom{position:fixed;left:0;right:0;bottom:0;z-index:52;flex-direction:column;align-items:center;gap:12px;padding:10px 20px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(#0000,#000e 40%)}
 .crow{display:flex;align-items:center;justify-content:space-between;width:min(360px,100%)}
 .cbtn.thumb{width:48px;height:48px;border-radius:12px;background-size:cover;background-position:center;border:1.5px solid rgba(255,255,255,.5)}
-.cbtn.thumb:empty:not([style*="background-image"]){visibility:hidden}
-.shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0}
-.shutter i{display:block;width:60px;height:60px;border-radius:50%;background:#ea4b3c;transition:all .25s cubic-bezier(.3,.7,.4,1)}
+.shutter{width:78px;height:78px;border-radius:50%;border:4px solid #fff;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0;transition:border-color .2s}
+.shutter i{display:block;width:62px;height:62px;border-radius:50%;background:var(--red);transition:all .25s cubic-bezier(.3,.7,.4,1)}
 .shutter:active i{transform:scale(.9)}
 .shutter.recording i{width:28px;height:28px;border-radius:7px}
-.shutter.auto{border-color:var(--good)}
-.zpills{display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(40,44,46,.55);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
-.zpills .chip{min-width:38px;height:38px;border-radius:50%;border:0;background:transparent;color:#fff;font:600 12.5px var(--mono);cursor:pointer;padding:0}
-.zpills .chip.on{background:rgba(255,255,255,.18);color:#ffd60a}
-#camHint{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65);min-height:13px}
-body.camfull #phone .verdict{left:50%;right:auto;transform:translateX(-50%);bottom:12px;padding:7px 14px;border-radius:999px;gap:10px;
-  font-size:16px;white-space:nowrap;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-body.camfull #phone .verdict.ok{background:rgba(127,209,168,.85)}
-body.camfull #phone .verdict.no{background:rgba(234,111,95,.88)}
-body.camfull #phone .prompter{font-size:19px}
-body.camfull #phone .rec{top:auto;bottom:56px;right:50%;transform:translateX(50%)}
-/* settings sheet */
-body.camfull #camScrim.on{display:block;position:fixed;inset:0;z-index:53;background:rgba(0,0,0,.35)}
-body.camfull #camSheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:54;margin:0 auto;max-width:560px;
-  padding:8px 18px calc(env(safe-area-inset-bottom) + 18px);border-radius:22px 22px 0 0;color:var(--ink);
-  background:rgba(22,34,35,.92);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
-  box-shadow:0 -10px 40px rgba(0,0,0,.4);transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.9,.25,1)}
-body.camfull #camSheet.on{transform:translateY(0)}
-.grab{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);margin:2px auto 10px}
-.sheet-h{font:600 15px "DM Sans",system-ui;text-align:center;margin-bottom:8px}
-.srow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
-.srow select{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:14px}
-.srow input[type=range]{flex:1;accent-color:var(--ice)}
-.slbl{width:92px;flex:none;font-size:13px;color:var(--muted)}
-.seg{display:flex;flex:1;background:var(--panel2);border-radius:10px;padding:3px}
-.seg button{flex:1;border:0;background:transparent;color:var(--muted);border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer}
-.seg button.on{background:var(--ice);color:#0a1416;font-weight:600}
-.toggle input{width:22px;height:22px;accent-color:var(--ice)}
-@media (prefers-reduced-motion:reduce){#camSheet,.shutter i,.btn,.chip,.cbtn{transition:none !important}}
-@media (prefers-reduced-transparency:reduce){.cbtn,.zpills,#camSheet{background:#1b2a2b;backdrop-filter:none;-webkit-backdrop-filter:none}}
+.shutter.auto{border-color:#5BD199}
+.zpills{display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(48,52,58,.6);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.zpills .chip{min-width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:#fff;font-size:13px;font-weight:650;cursor:pointer;padding:0}
+.zpills .chip.on{background:rgba(255,255,255,.18);color:#FFD60A}
+#camHint{font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);min-height:14px}
+body.camfull #phone .verdict{left:50%;right:auto;transform:translateX(-50%);bottom:12px;padding:8px 16px;border-radius:999px;font-size:16px;white-space:nowrap}
+body.camfull #phone .prompter{font-size:20px}
+body.camfull #phone .rec{top:auto;bottom:60px;right:50%;transform:translateX(50%)}
+body.camfull #camScrim.on{display:block;position:fixed;inset:0;z-index:53;background:rgba(0,0,0,.4)}
+body.camfull #camSheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:54;margin:0 auto;max-width:560px;padding:8px 20px calc(env(safe-area-inset-bottom) + 20px);border-radius:22px 22px 0 0;color:var(--night-ink);
+  background:rgba(31,34,39,.94);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);box-shadow:0 -10px 40px rgba(0,0,0,.4);transform:translateY(105%);transition:transform .36s cubic-bezier(.2,.9,.25,1)}
+body.camfull #camSheet.on{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);margin:2px auto 12px;cursor:pointer}
+.sheet-h{font-weight:650;font-size:16px;text-align:center;margin-bottom:8px}
+.srow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--night-line)}
+.srow select{flex:1;min-width:0;background-color:var(--night3);border:1px solid var(--night-line);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--night-ink)}
+.srow input[type=range]{flex:1;accent-color:var(--accent)}
+.slbl{width:96px;flex:none;font-size:14px;color:var(--night-ink2)}
+.seg{display:flex;flex:1;background:var(--night3);border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--night-ink2);border-radius:8px;padding:9px 6px;font-size:13.5px;font-weight:550;cursor:pointer}
+.seg button.on{background:var(--night-ink);color:var(--night)}
+.toggle input{width:22px;height:22px;accent-color:var(--accent)}
+.micmeter{display:inline-block;width:56px;height:8px;border-radius:4px;background:var(--night3);overflow:hidden}
+.micmeter i{display:block;height:100%;width:0;background:#5BD199;transition:width .1s linear}
 
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ice);color:#0a1416;border-radius:999px;padding:8px 14px;font-weight:600;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
-.toast.on{opacity:1}
+/* ---------- motion & material preferences ---------- */
+@media (max-width:900px){.phone{width:min(340px,82vw,calc(42dvh * 9 / 16))}.phone.drop .hint{font-size:12.5px}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+@media (prefers-reduced-transparency:reduce){.topbar,.cbtn,.zpills,#camSheet{backdrop-filter:none;-webkit-backdrop-filter:none}.topbar{background:var(--paper)}body.dark .topbar{background:var(--night)}}
+
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top">
-    <div class="brand"><b>SHOOT DIRECTOR</b><span class="pill" id="planPill">Plan</span></div>
-    <nav class="tabs" id="tabs" aria-label="Steps"><button data-v="script"><span class="n">1</span> Script</button><button data-v="plan" class="on"><span class="n">2</span> Plan</button><button data-v="shoot" disabled><span class="n">3</span> Shoot</button></nav>
-    <div class="dots" id="dots"></div>
-    <div class="clock hidden" id="clock">00:00</div>
-  </div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10.5l5-3v9l-5-3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M6 6l7 6-7 6V6zM17 6v12"/></symbol>
+    <symbol id="i-voice" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4V4z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7V5z"/></symbol>
+    <symbol id="i-cut" viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="M8.5 8.5L20 19M8.5 15.5L20 5"/></symbol>
+    <symbol id="i-me" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-lib" viewBox="0 0 24 24"><path d="M5 4h4v16H5zM10 4h4v16h-4z"/><path d="M15.5 4.8l3.8-1 4 15.5-3.8 1z" transform="translate(-2 0)"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/></symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 20h16"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </defs>
+</svg>
 
-  <!-- SCRIPT -->
-  <section id="vScript" class="plan hidden">
-    <h1>Write it the way you talk.</h1>
-    <p class="lede">Give me the story. I'll write a script built to hold attention: a hook in the first two seconds, stakes, a visual change every few seconds, an open loop, the payoff and your call to action. It's written in your speaking voice and timed to your pace.</p>
-    <div class="card" id="libCard" style="margin-bottom:16px">
-      <div class="row" style="justify-content:space-between">
-        <span class="mono">Saved scripts <span class="muted" id="libCount"></span></span>
-        <div class="row"><button class="btn ghost" id="bLibExport">Send to another device</button><button class="btn ghost" id="bLibImport">Add from another device</button></div>
-      </div>
-      <div id="libList" style="margin-top:6px"></div>
-      <textarea class="copy hidden" id="libBox" placeholder="Paste the code you copied on your other device"></textarea>
-      <div class="hidden" id="libExpRow" style="margin-top:8px;font-size:13.5px">
-        <p class="muted" style="margin:0 0 8px" id="libExpMsg"></p>
-        <div class="row"><button class="btn" id="bLibCopy">Copy link</button><button class="btn" id="bLibShare">Share…</button><button class="btn ghost" id="bLibFile">Save as file</button></div>
-      </div>
-      <div class="hidden" id="libImpRow" style="margin-top:8px">
-        <p class="muted" style="margin:0 0 8px;font-size:13.5px">Paste the link or code from your other device, or open the file you sent yourself.</p>
-        <div class="row"><button class="btn primary" id="bLibImpGo">Add these scripts</button><label class="btn ghost" for="libFile">Open file</label><input type="file" id="libFile" accept=".json,.txt,application/json,text/plain" class="hidden"></div>
-        <p style="margin:8px 0 0;font-size:12.5px;color:var(--warn)" id="libImpErr"></p>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="mark"><i></i></span><b>Shoot Director</b><span class="proj" id="planPill"></span></div>
+    <nav class="steps" id="tabs" aria-label="Production steps">
+      <button data-v="script"><span class="sn">01</span><span class="lbl">Script</span></button>
+      <span class="sep"></span>
+      <button data-v="plan" class="on"><span class="sn">02</span><span class="lbl">Shot list</span></button>
+      <span class="sep"></span>
+      <button data-v="shoot" disabled><span class="sn">03</span><span class="lbl">Record</span> <span class="prog" id="recProg"></span></button>
+    </nav>
+    <div class="top-r"><div class="clock hidden" id="clock">00:00</div><div id="dots" class="hidden"></div></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 01 SCRIPT -->
+  <section id="vScript" class="view hidden">
+    <div class="script-head">
+      <h1>Tell me your story.</h1>
+      <p class="sub">I'll write it in your voice, built to hold attention, and timed to how fast you talk.</p>
+    </div>
+    <div class="card story-box">
+      <textarea id="scStory" aria-label="Your story" placeholder="What happened, what it taught you, and what you want people to take away."></textarea>
+      <div class="story-foot">
+        <div class="chips" id="scExamples">
+          <button class="chip" data-ex="The 16,000 counts of développé a dancer loses by putting the leg down one count early, and the test to check yourself.">16,000 counts</button>
+          <button class="chip" data-ex="Part two of my story: the San Francisco Ballet summer programme, being told I wasn't strong enough yet, and what I did about it.">My SF Ballet story</button>
+          <button class="chip" data-ex="Why plié is not a warm-up step: it's how the body learns to absorb force, from landing a jump to walking down stairs.">Plié for everyone</button>
+        </div>
+        <span class="muted num" id="scWords" style="font-size:13px"></span>
       </div>
     </div>
-    <div class="grid2" style="align-items:start">
-      <div class="card form">
-        <label><span class="mono muted">The story</span>
-          <textarea id="scStory" style="min-height:140px" placeholder="E.g. The 16,000 counts of développé a dancer loses by putting the leg down one count early. Why holding it to the end matters, and the test to check yourself."></textarea></label>
-        <div class="grid2">
-          <label><span class="mono muted">Length</span><select id="scLen"><option value="15">15 seconds</option><option value="30" selected>30 seconds</option><option value="45">45 seconds</option><option value="60">60 seconds</option><option value="90">90 seconds</option></select></label>
-          <label><span class="mono muted">Format</span><select id="scFormat"><option value="mixed" selected>Talking plus b-roll</option><option value="talk">Talking to camera</option><option value="vo">Voiceover over b-roll</option></select></label>
-        </div>
-        <div class="grid2">
-          <label><span class="mono muted">Content type</span><select id="scType"><option value="ballet">Ballet technique</option><option value="move">Move / Perform / Longevity</option><option value="community">Inside the community</option><option value="story">Philosophy and story</option></select></label>
-          <label><span class="mono muted">Call to action (optional)</span><input id="scCta" placeholder="Comment HOLD and I'll send you the test"></label>
-        </div>
-        <div class="row"><button class="btn primary" id="bWrite">Write my script</button></div>
-        <div class="status" id="scStatus"></div>
-      </div>
-      <div class="card form">
-        <span class="mono">Your voice</span>
-        <p class="muted" style="margin:0;font-size:13.5px" id="voiceState"></p>
-        <details><summary class="muted" style="cursor:pointer;font-size:13.5px">See and edit the voice profile</summary>
-          <textarea id="vpView" style="min-height:260px;font:12.5px/1.5 var(--mono);margin-top:8px"></textarea>
-          <label class="row" style="gap:8px;margin-top:8px"><span class="mono muted">Pace, words a minute</span><input id="vpWps" type="number" min="100" max="220" style="width:90px"></label>
-          <div class="row" style="margin-top:8px"><button class="btn" id="bVoiceCopy">Copy profile</button><button class="btn ghost" id="bVoiceReset">Reset to workshop profile</button></div>
-        </details>
-        <label><span class="mono muted">Teach it more of your voice</span>
-          <textarea id="vtPaste" placeholder="Paste a transcript: a talk, a workshop, a podcast episode, a voice note."></textarea></label>
-        <input type="file" id="vtFiles" multiple accept=".txt,.vtt,.srt,.md,text/plain">
-        <div class="row"><button class="btn" id="bLearn">Learn my voice</button></div>
-        <p class="muted" style="margin:0;font-size:12.5px">Subtitle files (.vtt or .srt) also set your speaking pace, so script timings match how fast you actually talk.</p>
+    <div class="story-opts">
+      <label class="field">Length<select id="scLen"><option value="15">15 seconds</option><option value="30" selected>30 seconds</option><option value="45">45 seconds</option><option value="60">60 seconds</option><option value="90">90 seconds</option></select></label>
+      <label class="field">Format<select id="scFormat"><option value="mixed" selected>Talking + b-roll</option><option value="talk">Talking to camera</option><option value="vo">Voiceover</option></select></label>
+      <label class="field">Content type<select id="scType"><option value="ballet">Ballet technique</option><option value="move">Move / Perform / Longevity</option><option value="community">Inside the community</option><option value="story">Philosophy and story</option></select></label>
+      <label class="field">Call to action<input id="scCta" placeholder="Optional"></label>
+    </div>
+    <div class="gen-row">
+      <button class="btn primary big" id="bWrite"><svg class="i"><use href="#i-spark"/></svg>Generate my script</button>
+      <div class="status" id="scStatus"></div>
+      <div class="side-links">
+        <button class="btn ghost sm" data-drawer="dLib"><svg class="i"><use href="#i-lib"/></svg>Saved scripts <span class="muted num" id="libCount"></span></button>
+        <button class="btn ghost sm" data-drawer="dVoice"><svg class="i"><use href="#i-wave"/></svg>Your voice</button>
       </div>
     </div>
-    <div id="scriptOut" class="card hidden" style="margin-top:16px">
-      <div class="row" style="justify-content:space-between"><h2 style="font-family:var(--serif);font-size:30px;margin:0" id="scTitle"></h2>
-        <div class="row"><button class="btn" id="bScSave">Save for later</button><button class="btn primary" id="bScShoot">Turn into a shoot</button><button class="btn" id="bScRead">Read it aloud</button><button class="btn" id="bScCopy">Copy</button></div></div>
-      <p class="muted" style="font-size:13.5px;margin:6px 0 0" id="scStats"></p>
-      <div class="mono muted" style="margin-top:16px">Pick your hook</div>
-      <div id="scHooks"></div>
-      <div class="mono muted" style="margin-top:18px">Script · tap a line to edit it</div>
-      <div id="scBeats"></div>
-      <div class="row" style="margin-top:12px"><button class="btn" id="bScTighter">Tighter</button><button class="btn" id="bScWarmer">More like me</button></div>
-      <p style="font-size:13.5px;margin-top:14px"><span class="mono muted">Why it holds</span><br><span id="scWhy"></span></p>
-      <p style="font-size:13.5px"><span class="mono muted">Caption</span><br><span id="scCaption"></span></p>
-      <textarea class="copy hidden" id="scCopyBox" readonly></textarea>
+
+    <div id="scSkel" class="card editor hidden">
+      <div class="skel">
+        <div class="gen-status"><span class="spin"></span><span id="scGenMsg">Finding your hook…</span></div>
+        <div class="sk h24 w40" style="margin-top:20px"></div>
+        <div class="sk w80"></div><div class="sk w60"></div><div class="sk"></div><div class="sk w80"></div><div class="sk w40"></div>
+      </div>
+    </div>
+
+    <div id="scriptOut" class="card editor hidden">
+      <div class="ed-head">
+        <div>
+          <div class="eyebrow">Script</div>
+          <h2 id="scTitle" style="margin-top:4px"></h2>
+          <div class="ed-meta" id="scStats"></div>
+        </div>
+      </div>
+      <div class="ed-tools">
+        <button class="btn ghost" id="bScTighter"><svg class="i"><use href="#i-cut"/></svg>Tighter</button>
+        <button class="btn ghost" id="bScWarmer"><svg class="i"><use href="#i-me"/></svg>More like me</button>
+        <button class="btn ghost" id="bScRead"><svg class="i"><use href="#i-play"/></svg>Read aloud</button>
+        <button class="btn ghost" id="bScCopy"><svg class="i"><use href="#i-copy"/></svg>Copy</button>
+        <button class="btn ghost" id="bScSave"><svg class="i"><use href="#i-save"/></svg>Save</button>
+      </div>
+      <div class="hooks"><div class="eyebrow">Choose your hook</div><div id="scHooks"></div></div>
+      <div class="beats" id="scBeats"></div>
+      <div class="ed-notes">
+        <div><div class="eyebrow" style="margin-bottom:4px">Why it holds</div><span id="scWhy"></span></div>
+        <div><div class="eyebrow" style="margin-bottom:4px">Caption</div><span id="scCaption"></span></div>
+      </div>
+      <textarea class="copy hidden" id="scCopyBox" readonly style="margin:0 24px 16px;width:calc(100% - 48px)"></textarea>
+      <div class="ed-foot">
+        <span class="muted" style="font-size:14px">Tap any line to edit it. Changes save as you go.</span>
+        <button class="btn primary big" id="bScShoot">Create shot list<svg class="i"><use href="#i-next"/></svg></button>
+      </div>
     </div>
   </section>
 
-  <!-- PLAN -->
-  <section id="vPlan" class="plan">
-    <h1>Tell me the story.<br>I'll tell you what to film.</h1>
-    <p class="lede">Put the phone on a stand, film each shot as it's called, and drop the take in. Every take is checked for framing, headroom, feet, light, steadiness, length and whether it shows what was asked. Redo it until it passes. At the end your clips come back named and in story order.</p>
-    <div class="card form">
-      <label><span class="mono muted">What's the video about</span>
-        <textarea id="fStory" placeholder="Audition season. The 6am barre nobody sees, the email that says no, and the callback that says yes."></textarea></label>
-      <div class="grid2">
-        <label><span class="mono muted">Where are you filming</span><input id="fWhere" placeholder="Home studio, kitchen, car park"></label>
-        <label><span class="mono muted">Content type</span>
-          <select id="fType">
-            <option value="ballet">Ballet technique</option>
-            <option value="move">Move / Perform / Longevity</option>
-            <option value="community">Inside the community</option>
-            <option value="story" selected>Philosophy and story</option>
-          </select></label>
+  <!-- 02 SHOT LIST -->
+  <section id="vPlan" class="view">
+    <div id="planEmpty" class="empty">
+      <h1>Plan the shots.</h1>
+      <p class="sub">Every shot comes with what to do, what to say and where to put the camera.</p>
+      <div class="paths">
+        <button class="path" id="pFromScript"><div class="ico"><svg class="i"><use href="#i-edit"/></svg></div><h3>From a script</h3><p>Write the script first, then turn it into shots.</p></button>
+        <button class="path" id="pFromStory"><div class="ico"><svg class="i"><use href="#i-list"/></svg></div><h3>From a story idea</h3><p>Describe the video and get a three-act shot list.</p></button>
+        <button class="path" id="bSample"><div class="ico"><svg class="i"><use href="#i-play"/></svg></div><h3>Try the sample</h3><p>"The audition", nine shots across three acts.</p></button>
       </div>
-      <div class="grid3">
-        <label><span class="mono muted">Act one</span><input id="fA0" value="Struggle"></label>
-        <label><span class="mono muted">Act two</span><input id="fA1" value="Grind"></label>
-        <label><span class="mono muted">Act three</span><input id="fA2" value="Win"></label>
-      </div>
-      <div class="row">
-        <label class="row" style="gap:8px"><span class="mono muted">Shots per act</span>
-          <select id="fPer" style="width:auto"><option>2</option><option selected>3</option><option>4</option></select></label>
-        <label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="fYap" checked style="width:auto"> <span>Include talking-to-camera shots with hook lines</span></label>
-      </div>
-      <div class="row">
-        <button class="btn primary" id="bPlan">Plan my shots</button>
-        <button class="btn" id="bSample">Use the sample shoot</button>
-        <button class="btn ghost hidden" id="bResume">Resume last plan</button>
-      </div>
-      <div class="status" id="planStatus"></div>
-    </div>
+      <button class="btn ghost sm hidden" id="bResume" style="margin-top:12px"><svg class="i"><use href="#i-repeat"/></svg>Resume your last shot list</button>
 
-    <details class="card" style="margin-top:14px" id="playbook"><summary style="cursor:pointer"><span class="mono">The playbook</span> <span class="muted" style="font-size:13px">· what every shot is planned and checked against</span></summary><div id="pbBody" style="margin-top:10px"></div></details>
+      <div class="card pad planform hidden" id="planForm">
+        <label class="field">What's the video about<textarea id="fStory" rows="4" placeholder="Audition season. The 6am barre nobody sees, the email that says no, and the callback that says yes."></textarea></label>
+        <div class="grid" style="margin-top:12px">
+          <label class="field">Where you're filming<input id="fWhere" placeholder="Home studio, kitchen"></label>
+          <label class="field">Content type<select id="fType"><option value="ballet">Ballet technique</option><option value="move">Move / Perform / Longevity</option><option value="community">Inside the community</option><option value="story" selected>Philosophy and story</option></select></label>
+          <label class="field">Shots per act<select id="fPer"><option>2</option><option selected>3</option><option>4</option></select></label>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <label class="field">Act one<input id="fA0" value="Struggle"></label>
+          <label class="field">Act two<input id="fA1" value="Grind"></label>
+          <label class="field">Act three<input id="fA2" value="Win"></label>
+        </div>
+        <label class="row" style="margin-top:12px;font-size:14px;color:var(--ink2);cursor:pointer"><input type="checkbox" id="fYap" checked style="width:18px;height:18px;accent-color:var(--accent)"> Include talking-to-camera shots with hook lines</label>
+        <div class="row" style="margin-top:16px"><button class="btn primary big" id="bPlan"><svg class="i"><use href="#i-spark"/></svg>Plan my shots</button><div class="status" id="planStatus"></div></div>
+      </div>
+    </div>
 
     <div id="planOut" class="hidden">
-      <div class="row" style="justify-content:space-between;margin-top:22px">
-        <h2 style="font-family:var(--serif);font-size:28px;margin:0" id="planTitle">Shot list</h2>
-        <button class="btn primary" id="bStart">Start the shoot</button>
+      <div class="plan-head">
+        <div>
+          <div class="eyebrow">Shot list</div>
+          <h1 id="planTitle" style="margin-top:6px">Shot list</h1>
+          <div class="plan-meta" id="planMeta"></div>
+        </div>
+        <div class="row">
+          <button class="btn ghost sm" data-drawer="dPlaybook"><svg class="i"><use href="#i-book"/></svg>Filming playbook</button>
+          <button class="btn ghost sm" id="bNewPlan"><svg class="i"><use href="#i-plus"/></svg>New shot list</button>
+        </div>
       </div>
-      <p class="muted" style="margin:4px 0 0;font-size:13.5px">Tap a direction to rewrite it. Framing decides what gets checked: close and medium shots check headroom, full shots check your feet, detail shots skip the face.</p>
-      <div class="shotlist" id="shotlist"></div>
+      <div class="timeline" id="planTimeline"></div>
+      <div class="tl-labels" id="planTlLabels"></div>
+      <div id="shotlist"></div>
+      <div class="plan-cta">
+        <button class="btn primary big" id="bStart"><svg class="i"><use href="#i-cam"/></svg>Start recording</button>
+      </div>
     </div>
   </section>
 
-  <!-- SHOOT -->
-  <section id="vShoot" class="hidden">
-    <div class="stage">
-      <div class="director">
-        <div class="orbwrap"><div class="orb" id="orb"></div><div class="ring"></div></div>
-        <div class="dstate" id="dstate">DIRECTOR</div>
-        <p class="dline" id="dline"></p>
-        <p class="mono muted" id="dcraft" style="max-width:46ch;text-transform:none;letter-spacing:.02em;font-size:12px;margin:12px 0 0"></p>
-        <div class="dctl">
-          <button class="btn" id="bSay">Say it again</button>
-          <button class="btn ghost" id="bVoice">Voice on</button>
-          <button class="btn ghost" id="bPrev">Back</button>
-          <button class="btn ghost" id="bSkip">Skip shot</button>
-          <button class="btn ghost" id="bWrap">Wrap</button>
-        </div>
-        <form class="askrow ai-only" id="askForm"><input id="askIn" placeholder="Ask the director anything about this shot"><button class="btn">Ask</button></form>
-        <div class="loading" id="eyeStatus">Loading the camera eye…</div>
-      </div>
-      <div>
-        <div class="take">
-          <div id="phone" class="phone drop">
-            <div>
-              <div class="up">↑</div>
-              <div class="big">Drop your take</div>
-              <div class="mono muted" style="margin-top:8px" id="dropShot">SHOT 1</div>
-              <div class="hint" id="dropHint"></div>
-            </div>
+  <!-- 03 RECORD -->
+  <section id="vShoot" class="view hidden">
+    <div class="rec-grid">
+      <div class="monitor">
+        <div id="phone" class="phone drop">
+          <div>
+            <div class="up"><svg class="i"><use href="#i-upload"/></svg></div>
+            <div class="big">Add this take</div>
+            <div class="hint" id="dropHint"></div>
           </div>
-          <div class="checks" id="checks"></div>
         </div>
-        <div class="takectl" style="justify-content:center">
-          <button class="btn primary big" id="bLive">Open camera</button>
-          <button class="btn" id="bPick">Add a take from your library</button>
-          <button class="btn hidden" id="bKeep">Keep it anyway</button>
-          <button class="btn hidden" id="bNext">Next shot</button>
+      </div>
+      <div class="brief">
+        <div>
+          <div class="shotno" id="shotNo">SHOT</div>
+          <div class="framing-lbl" id="framingLbl"></div>
+        </div>
+        <div class="dir-card">
+          <div class="dir-who"><span class="orb" id="orb"></span><span id="dstate">Director</span></div>
+          <p class="dline" id="dline"></p>
+          <div class="saybox hidden" id="sayBox"></div>
+          <p class="dcraft" id="dcraft"></p>
+        </div>
+        <div class="checks" id="checks"></div>
+        <div class="rec-actions takectl">
+          <button class="btn primary big" id="bLive"><svg class="i"><use href="#i-cam"/></svg>Open camera</button>
+          <button class="btn big" id="bPick"><svg class="i"><use href="#i-upload"/></svg>Upload a take</button>
+          <button class="btn big hidden" id="bKeep">Keep it anyway</button>
+          <button class="btn primary big hidden" id="bNext">Next shot<svg class="i"><use href="#i-next"/></svg></button>
         </div>
         <input type="file" id="fTake" accept="video/*" class="hidden">
+        <div class="minor">
+          <button class="btn ghost" id="bPrev"><svg class="i"><use href="#i-back"/></svg>Back</button>
+          <button class="btn ghost" id="bSkip"><svg class="i"><use href="#i-skip"/></svg>Skip</button>
+          <button class="btn ghost" id="bSay"><svg class="i"><use href="#i-repeat"/></svg>Repeat</button>
+          <button class="btn ghost" id="bVoice"><svg class="i"><use href="#i-voice"/></svg>Voice on</button>
+          <button class="btn ghost ai-only" id="bAskOpen"><svg class="i"><use href="#i-chat"/></svg>Ask</button>
+          <button class="btn ghost" id="bWrap" style="margin-left:auto"><svg class="i"><use href="#i-flag"/></svg>Finish</button>
+        </div>
+        <form class="askrow ai-only hidden" id="askForm"><input id="askIn" placeholder="Ask the director about this shot"><button class="btn">Ask</button></form>
+        <div class="loading" id="eyeStatus">Loading framing detection…</div>
       </div>
     </div>
-    <div class="rails" id="rails"></div>
+    <div class="strip">
+      <div class="strip-h"><span class="eyebrow" style="color:var(--night-ink2)">All shots</span><span class="num" style="font-size:13px;color:var(--night-ink2)" id="stripCount"></span></div>
+      <div class="rails" id="rails"></div>
+    </div>
   </section>
 
-  <!-- DONE -->
-  <section id="vDone" class="hidden done">
-    <span class="mono muted">Wrap</span>
-    <h1>Done. Everything's organised.</h1>
-    <p class="muted" id="doneSummary"></p>
-    <div class="row">
-      <button class="btn primary" id="bZip">Download all footage (.zip)</button>
-      <button class="btn" id="bCopy">Copy shot list</button>
-      <button class="btn ghost" id="bBackToShoot">Back to the shoot</button>
-      <button class="btn ghost" id="bNew">New shoot</button>
+  <!-- FINISH -->
+  <section id="vDone" class="view hidden">
+    <div class="spread">
+      <div>
+        <div class="eyebrow" id="doneEyebrow">Wrap</div>
+        <h1 style="margin-top:6px" id="doneH">Your footage is ready.</h1>
+        <p class="sub" id="doneSummary"></p>
+      </div>
+      <div class="row">
+        <button class="btn primary big" id="bZip"><svg class="i"><use href="#i-dl"/></svg>Download footage</button>
+      </div>
+    </div>
+    <div class="stats" id="doneStats"></div>
+    <div class="card fm">
+      <div class="fm-h">
+        <span style="font-weight:600;font-size:14px" id="fmTitle">Files</span>
+        <div class="row">
+          <button class="btn ghost sm" id="bCopy"><svg class="i"><use href="#i-copy"/></svg>Copy shot list</button>
+          <button class="btn ghost sm" id="bBackToShoot"><svg class="i"><use href="#i-cam"/></svg>Back to recording</button>
+          <button class="btn ghost sm" id="bNew"><svg class="i"><use href="#i-plus"/></svg>New shoot</button>
+        </div>
+      </div>
+      <div id="files"></div>
     </div>
     <div class="progress hidden" id="zipProg"><i></i></div>
-    <div class="status" id="zipStatus"></div>
+    <div class="status" id="zipStatus" style="margin-top:8px"></div>
     <textarea class="copy hidden" id="copyBox" readonly></textarea>
-    <div class="files" id="files"></div>
   </section>
-</div>
+</main>
+
+<!-- DRAWERS -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="dLib" aria-label="Saved scripts">
+  <div class="drawer-h"><h3>Saved scripts</h3><button class="ibtn" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="drawer-b">
+    <div id="libList"></div>
+    <div class="sect">
+      <div class="sect-t">Move scripts between devices</div>
+      <div class="row"><button class="btn sm" id="bLibExport">Send to another device</button><button class="btn sm" id="bLibImport">Add from another device</button></div>
+      <textarea class="copy hidden" id="libBox" placeholder="Paste the link or code from your other device"></textarea>
+      <div class="hidden" id="libExpRow" style="margin-top:10px;font-size:14px">
+        <p class="muted" style="margin:0 0 8px" id="libExpMsg"></p>
+        <div class="row"><button class="btn sm primary" id="bLibCopy">Copy link</button><button class="btn sm" id="bLibShare">Share…</button><button class="btn sm ghost" id="bLibFile">Save as file</button></div>
+      </div>
+      <div class="hidden" id="libImpRow" style="margin-top:10px">
+        <div class="row"><button class="btn sm primary" id="bLibImpGo">Add these scripts</button><label class="btn sm ghost" for="libFile">Open file</label><input type="file" id="libFile" accept=".json,.txt,application/json,text/plain" class="hidden"></div>
+        <p style="margin:8px 0 0;font-size:13px;color:#9A6315" id="libImpErr"></p>
+      </div>
+    </div>
+  </div>
+</aside>
+<aside class="drawer" id="dVoice" aria-label="Your voice">
+  <div class="drawer-h"><h3>Your voice</h3><button class="ibtn" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="drawer-b">
+    <p class="muted" style="margin:0;font-size:14px" id="voiceState"></p>
+    <div class="sect">
+      <div class="sect-t">Teach it more of your voice</div>
+      <textarea class="inp" id="vtPaste" rows="5" placeholder="Paste a transcript: a talk, a workshop, a podcast, a voice note."></textarea>
+      <div class="row" style="margin-top:8px"><label class="btn sm ghost" for="vtFiles">Choose files</label><input type="file" id="vtFiles" multiple accept=".txt,.vtt,.srt,.md,text/plain" class="hidden"><button class="btn sm primary" id="bLearn">Learn my voice</button></div>
+      <p class="muted" style="font-size:13px;margin:8px 0 0">Subtitle files (.vtt, .srt) also set your speaking pace.</p>
+    </div>
+    <div class="sect">
+      <div class="sect-t">Voice profile</div>
+      <textarea class="inp" id="vpView" rows="14" style="font:13px/1.5 ui-monospace,Menlo,monospace"></textarea>
+      <div class="row" style="margin-top:8px"><label class="field" style="flex-direction:row;display:flex;align-items:center;gap:8px">Words a minute<input id="vpWps" type="number" min="100" max="220" style="width:90px"></label></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="bVoiceCopy">Copy profile</button><button class="btn sm ghost" id="bVoiceReset">Reset</button></div>
+    </div>
+  </div>
+</aside>
+<aside class="drawer" id="dPlaybook" aria-label="Filming playbook">
+  <div class="drawer-h"><h3>Filming playbook</h3><button class="ibtn" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="drawer-b"><p class="muted" style="margin:0 0 16px;font-size:14px">Every shot is planned and checked against these.</p><div id="pbBody"></div></div>
+</aside>
+
 
 <!-- CAMERA (full screen, like the Camera app) -->
 <div id="camBack"></div>
 <div id="camTop" class="camui">
   <button class="cbtn" id="camClose" aria-label="Close camera"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-  <div class="ctitle"><div id="camShot"></div><div id="camLine"></div></div>
+  <div class="ctitle"><div id="camShot"></div><div id="camFraming"></div><div id="camLine"></div></div>
   <button class="cbtn" id="camGear" aria-label="Camera settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg></button>
 </div>
 <div id="camBottom" class="camui">
@@ -458,7 +753,22 @@ const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const median = a => { const b = a.filter(v => v != null && !isNaN(v)).sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); };
-const ACT_C = ['#ea8f7f', '#c9a86a', '#7fd1a8', '#9fd3d6'];
+const ACT_C = ['#8C9AF8', '#5267F5', '#2A3BB8', '#141E6E'];
+const ICON = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const setBtn = (el, icon, text, after) => { el.innerHTML = after ? esc(text) + ICON(icon) : (icon ? ICON(icon) : '') + esc(text); };
+const FRAME_NAME = { talk: 'Medium close-up · facing camera', close: 'Close-up · head and shoulders', medium: 'Medium shot · head to waist', full: 'Wide shot · head to feet', detail: 'Detail · hands, feet or object' };
+const FRAME_SHORT = { talk: 'Mid close-up', close: 'Close-up', medium: 'Medium', full: 'Wide', detail: 'Detail' };
+const FRAME_CAM = { talk: 'Eye level, arm\'s length, look into the lens', close: 'Eye level, close, slightly off the window', medium: 'Chest height, 1.5 to 2 metres back', full: 'Hip height, far enough to keep your feet in', detail: 'Low and close to the action' };
+function frameSVG(f) {
+  const st = 'stroke="#F2F2EE" stroke-width="2" fill="none" stroke-linecap="round"';
+  const fig = { talk: `<circle cx="31" cy="44" r="13" ${st}/><path d="M8 112c2-28 12-40 23-40s21 12 23 40" ${st}/><circle cx="31" cy="44" r="2" fill="#5267F5"/>`,
+    close: `<circle cx="31" cy="52" r="20" ${st}/><path d="M0 112c4-22 16-32 31-32s27 10 31 32" ${st}/>`,
+    medium: `<circle cx="31" cy="30" r="9" ${st}/><path d="M14 110V62c0-14 8-20 17-20s17 6 17 20v48" ${st}/>`,
+    full: `<circle cx="31" cy="20" r="5" ${st}/><path d="M31 26v38M31 34l-10 12M31 34l10 12M31 64l-8 26M31 64l8 26" ${st}/><path d="M12 98h38" stroke="#5267F5" stroke-width="2"/>`,
+    detail: `<path d="M14 80c6-10 10-26 18-26s10 12 16 26" ${st}/><circle cx="31" cy="60" r="16" stroke="#5267F5" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>` }[f] || '';
+  return `<svg viewBox="0 0 62 110" aria-hidden="true">${fig}</svg>`;
+}
+const pad2 = n => String(n).padStart(2, '0');
 
 const PLAYBOOK = [
   { h: 'Hook and first frame', items: [
@@ -626,11 +936,24 @@ function setLine(text, state, cls) {
   $('#dline').innerHTML = esc(text);
   const o = $('#orb'); o.className = 'orb' + (cls ? ' ' + cls : '');
 }
-$('#bVoice').onclick = () => { S.voice = !S.voice; $('#bVoice').textContent = S.voice ? 'Voice on' : 'Voice off'; if (!S.voice && synth) synth.cancel(); };
+$('#bVoice').onclick = () => { S.voice = !S.voice; setBtn($('#bVoice'), 'voice', S.voice ? 'Voice on' : 'Voice off'); if (!S.voice && synth) synth.cancel(); };
 $('#bSay').onclick = () => announce();
 
 /* ---------------- Plan ---------------- */
-$('#pbBody').innerHTML = PLAYBOOK.map(sec => `<div style="margin-bottom:12px"><div class="mono" style="color:var(--gold)">${esc(sec.h)}</div><ul style="margin:6px 0 0;padding-left:18px;font-size:14px">${sec.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('');
+$('#pbBody').innerHTML = PLAYBOOK.map(sec => `<div class="sect"><div class="sect-t">${esc(sec.h)}</div><ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.5;color:var(--ink2)">${sec.items.map(i => `<li style="margin-bottom:4px">${esc(i)}</li>`).join('')}</ul></div>`).join('');
+/* drawers */
+function openDrawer(id) { closeDrawers(); $('#' + id).classList.add('on'); $('#scrim').classList.add('on'); }
+function closeDrawers() { document.querySelectorAll('.drawer.on').forEach(d => d.classList.remove('on')); $('#scrim').classList.remove('on'); }
+document.querySelectorAll('[data-drawer]').forEach(b => b.onclick = () => openDrawer(b.dataset.drawer));
+document.querySelectorAll('.drawer [data-close]').forEach(b => b.onclick = closeDrawers);
+$('#scrim').onclick = closeDrawers;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawers(); });
+$('#pFromScript').onclick = () => setView('script');
+$('#pFromStory').onclick = () => { $('#planForm').classList.remove('hidden'); $('#fStory').focus(); };
+$('#bNewPlan').onclick = () => { $('#planOut').classList.add('hidden'); $('#planEmpty').classList.remove('hidden'); window.scrollTo(0, 0); };
+/* story box helpers */
+document.querySelectorAll('#scExamples .chip').forEach(c => c.onclick = () => { $('#scStory').value = c.dataset.ex; $('#scStory').dispatchEvent(new Event('input')); $('#scStory').focus(); });
+$('#scStory').addEventListener('input', () => { const w = wordsIn($('#scStory').value); $('#scWords').textContent = w ? w + ' words' : ''; });
 function samplePlan() {
   const acts = [$('#fA0').value || 'Struggle', $('#fA1').value || 'Grind', $('#fA2').value || 'Win'];
   return {
@@ -704,34 +1027,71 @@ Return ONLY JSON:
 };
 function renderPlan() {
   const p = S.plan;
-  $('#planOut').classList.remove('hidden');
+  $('#planOut').classList.remove('hidden'); $('#planEmpty').classList.add('hidden');
   $('#planTitle').textContent = p.title;
   $('#planPill').textContent = p.title;
-  let html = '', n = 0;
+  const est = p.shots.reduce((a, s) => a + (s.minLen + s.maxLen) / 2, 0);
+  const talkN = p.shots.filter(s => s.framing === 'talk').length;
+  $('#planMeta').innerHTML = `<span>${p.shots.length} shots</span><span>${p.acts.length} acts</span><span>${talkN} talking · ${p.shots.length - talkN} b-roll</span><span>about ${Math.round(est)}s of footage</span>`;
+  $('#planTimeline').innerHTML = p.acts.map((a, ai) => { const w = p.shots.filter(s => s.act === ai).reduce((x, s) => x + s.minLen + s.maxLen, 0); return `<span class="a${ai}" style="flex:${w || 1}"></span>`; }).join('');
+  $('#planTlLabels').innerHTML = p.acts.map((a, ai) => { const w = p.shots.filter(s => s.act === ai).reduce((x, s) => x + s.minLen + s.maxLen, 0); return `<span style="flex:${w || 1}">${esc(a)}</span>`; }).join('');
+  let html = '';
   p.acts.forEach((a, ai) => {
-    html += `<div class="sl-act" style="color:${ACT_C[ai]}">${esc(a)}</div>`;
-    p.shots.filter(s => s.act === ai).forEach(s => {
-      n++;
-      html += `<div class="sl" data-id="${s.id}"><div class="n">${n}</div><div>
-        <div class="t">${esc(s.title)}</div>
-        <div class="d" contenteditable="true" spellcheck="true">${esc(s.direction)}</div>
-        ${s.framing === 'talk' ? `<div class="mono" style="text-transform:none;letter-spacing:.02em;font-size:12.5px;margin-bottom:6px;color:var(--gold)">Say: <span class="ln" contenteditable="true">${esc(s.line)}</span></div>` : ''}
-        ${s.craft ? `<div class="muted" style="font-size:12.5px;margin-bottom:6px">Craft: ${esc(s.craft)}</div>` : ''}
-        <div class="meta">
-          <select data-k="framing">${['talk', 'close', 'medium', 'full', 'detail'].map(f => `<option ${f === s.framing ? 'selected' : ''}>${f}</option>`).join('')}</select>
-          <select data-k="textRoom"><option value="1" ${s.textRoom ? 'selected' : ''}>room for text</option><option value="0" ${!s.textRoom ? 'selected' : ''}>no text</option></select>
-          <span class="tag">${s.minLen}–${s.maxLen}s</span><span class="tag">${esc(s.mood)}</span>
-        </div></div></div>`;
+    const ss = p.shots.filter(s => s.act === ai);
+    html += `<div class="act"><div class="act-h"><span class="an">Act ${ai + 1}</span><h3>${esc(a)}</h3><span class="muted" style="font-size:13px">${ss.length} shot${ss.length === 1 ? '' : 's'}</span></div><div class="cards">`;
+    ss.forEach(s => {
+      const i = p.shots.indexOf(s), talk = s.framing === 'talk', done = S.saved && S.saved[s.id];
+      html += `<article class="shot sl ${talk ? 'aroll' : 'broll'}" data-id="${s.id}">
+        <div class="shot-top"><div class="frame">${frameSVG(s.framing)}</div><div class="shot-id">
+          <div class="shot-no">SHOT ${pad2(i + 1)}</div><div class="shot-t">${esc(s.title)}</div>
+          <div class="shot-tags"><span class="tag ${talk ? 'aroll' : 'broll'}">${talk ? 'Talking' : 'B-roll'}</span><span class="tag">${FRAME_SHORT[s.framing]}</span><span class="tag num">${s.minLen}–${s.maxLen}s</span></div>
+        </div></div>
+        <div class="shot-b">
+          <div class="shot-dir d" contenteditable="true" spellcheck="true" aria-label="Direction">${esc(s.direction)}</div>
+          ${talk ? `<div class="shot-say"><span class="eyebrow" style="display:block;margin-bottom:2px">Say</span><span class="ln" contenteditable="true">${esc(s.line)}</span></div>` : ''}
+          <div class="shot-cam">${ICON('cam')}<span>${esc(s.craft || FRAME_CAM[s.framing])}</span></div>
+        </div>
+        <div class="shot-more">
+          <label class="field">Framing<select data-k="framing">${['talk', 'close', 'medium', 'full', 'detail'].map(f => `<option value="${f}" ${f === s.framing ? 'selected' : ''}>${FRAME_SHORT[f]}</option>`).join('')}</select></label>
+          <label class="field">Text on screen<select data-k="textRoom"><option value="1" ${s.textRoom ? 'selected' : ''}>Leave room</option><option value="0" ${!s.textRoom ? 'selected' : ''}>No text</option></select></label>
+        </div>
+        <div class="shot-f"><span class="tag ${done ? 'filmed' : 'tofilm'}">${done ? ICON('check') + 'Recorded' : 'To record'}</span><div class="ctl">
+          <button class="ibtn" data-m="-1" aria-label="Move earlier" ${i === 0 ? 'disabled' : ''}>${ICON('up')}</button>
+          <button class="ibtn" data-m="1" aria-label="Move later" ${i === p.shots.length - 1 ? 'disabled' : ''}>${ICON('down')}</button>
+          <button class="ibtn" data-x aria-label="Edit framing">${ICON('edit')}</button></div></div>
+      </article>`;
     });
+    html += `</div></div>`;
   });
   $('#shotlist').innerHTML = html;
   $('#shotlist').querySelectorAll('.sl').forEach(el => {
     const s = p.shots.find(x => x.id === el.dataset.id);
     el.querySelector('.d').addEventListener('blur', e => { s.direction = e.target.textContent.trim().replace(/[—–]/g, ','); savePlan(); });
     const ln = el.querySelector('.ln'); if (ln) ln.addEventListener('blur', e => { s.line = e.target.textContent.trim().replace(/[—–]/g, ','); savePlan(); });
-    el.querySelectorAll('select').forEach(sel => sel.onchange = () => { s[sel.dataset.k] = sel.dataset.k === 'textRoom' ? sel.value === '1' : sel.value; savePlan(); });
+    el.querySelectorAll('select').forEach(sel => sel.onchange = () => { s[sel.dataset.k] = sel.dataset.k === 'textRoom' ? sel.value === '1' : sel.value; savePlan(); if (sel.dataset.k === 'framing') { renderPlan(); const n = $('#shotlist').querySelector(`[data-id="${s.id}"]`); if (n) n.classList.add('open'); } });
+    el.querySelector('[data-x]').onclick = () => el.classList.toggle('open');
+    el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+      const i = p.shots.indexOf(s), j = i + +b.dataset.m; if (j < 0 || j >= p.shots.length) return;
+      const o = p.shots[j];
+      if (o.act !== s.act) s.act = o.act; else { p.shots[i] = o; p.shots[j] = s; }
+      p.shots.sort((x, y) => x.act - y.act);
+      savePlan(); renderPlan();
+      const n = $('#shotlist').querySelector(`[data-id="${s.id}"]`); if (n) n.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
   });
-  $('#planOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updateSteps();
+}
+function updateSteps() {
+  const done = { script: !!SC, plan: !!S.plan, shoot: !!(S.plan && S.saved && Object.keys(S.saved).length) };
+  const cur = (document.querySelector('.view:not(.hidden)') || {}).id;
+  document.querySelectorAll('#tabs button').forEach(b => {
+    const v = b.dataset.v, on = cur === 'v' + v[0].toUpperCase() + v.slice(1) || (cur === 'vDone' && v === 'shoot');
+    b.classList.toggle('on', on); b.classList.toggle('done', !on && done[v]);
+    b.querySelector('.sn').innerHTML = !on && done[v] ? ICON('check') : '0' + (['script', 'plan', 'shoot'].indexOf(v) + 1);
+    if (v === 'shoot') b.disabled = !S.t0;
+  });
+  const pr = $('#recProg');
+  if (pr) pr.textContent = S.plan && S.t0 ? `${Object.keys(S.saved || {}).length}/${S.plan.shots.length}` : '';
 }
 
 /* ---------------- Shoot flow ---------------- */
@@ -747,7 +1107,9 @@ $('#bStart').onclick = () => {
 function show(v) {
   if (v !== 'shoot') { document.body.classList.remove('camfull'); }
   ['script', 'plan', 'shoot', 'done'].forEach(k => $('#v' + k[0].toUpperCase() + k.slice(1)).classList.toggle('hidden', k !== v));
-  document.querySelectorAll('#tabs button').forEach(b => { b.classList.toggle('on', b.dataset.v === v || (v === 'done' && b.dataset.v === 'shoot')); if (b.dataset.v === 'shoot') b.disabled = !S.t0; });
+  document.body.classList.toggle('dark', v === 'shoot');
+  { const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = v === 'shoot' ? '#17191D' : '#F7F7F4'; }
+  closeDrawers(); updateSteps();
   window.scrollTo(0, 0);
 }
 const shot = () => S.plan.shots[S.idx];
@@ -755,12 +1117,18 @@ const ordinal = n => ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 's
 function announce() {
   const s = shot(); if (!s) return;
   const first = S.idx === 0 ? 'First shot. ' : S.idx === S.plan.shots.length - 1 ? 'Last shot. ' : `Shot ${S.idx + 1}. `;
-  $('#dcraft').textContent = (s.craft ? 'Craft: ' + s.craft : '');
+  $('#dcraft').textContent = s.craft || FRAME_CAM[s.framing];
+  const sb = $('#sayBox'); sb.classList.toggle('hidden', !(s.framing === 'talk' && s.line)); sb.innerHTML = s.line ? `<span class="eyebrow" style="display:block;margin-bottom:4px;color:var(--night-ink2)">Say</span>${esc(s.line)}` : '';
   speak(first + s.direction + (s.framing === 'talk' && s.line ? ' Your line: ' + s.line : ''), 'DIRECTOR');
+  $('#dline').textContent = first + s.direction;
 }
 function goTo(i, say = true) {
   S.idx = clamp(i, 0, S.plan.shots.length - 1);
   const s = shot();
+  $('#shotNo').innerHTML = `SHOT <b>${pad2(S.idx + 1)}</b> / ${pad2(S.plan.shots.length)}`;
+  $('#framingLbl').textContent = FRAME_NAME[s.framing];
+  $('#dcraft').textContent = s.craft || FRAME_CAM[s.framing];
+  { const sb = $('#sayBox'); sb.classList.toggle('hidden', !(s.framing === 'talk' && s.line)); sb.innerHTML = s.line ? `<span class="eyebrow" style="display:block;margin-bottom:4px;color:var(--night-ink2)">Say</span>${esc(s.line)}` : ''; }
   renderDots(); renderRails();
   const t = S.takes[s.id];
   if (S.live && S.live.on) { mountLive(); $('#checks').innerHTML = ''; }
@@ -771,10 +1139,10 @@ function hintFor(s) { return FRAMING_HINT[s.framing] + (s.textRoom ? ' Leave roo
 function resetCard() {
   const ph = $('#phone'); ph.style.aspectRatio = ''; ph.style.width = '';
   ph.className = 'phone drop';
-  ph.innerHTML = `<div><div class="up">↑</div><div class="big">Drop your take</div><div class="mono muted" style="margin-top:8px">SHOT ${S.idx + 1} · ${esc(shot().title)}</div><div class="hint">${esc(hintFor(shot()))}</div></div>`;
+  ph.innerHTML = `<div><div class="up">${ICON('cam')}</div><div class="big">${esc(shot().title)}</div><div class="hint">${esc(hintFor(shot()))}</div><div class="hint" style="margin-top:14px;opacity:.7">Open the camera, or drop a video here</div></div>`;
   $('#checks').innerHTML = '';
   $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden');
-  $('#bPick').textContent = 'Add take';
+  setBtn($('#bPick'), 'upload', 'Upload a take');
 }
 function renderDots() {
   $('#dots').innerHTML = S.plan.shots.map((s, i) => `<i class="${S.saved[s.id] ? 'done' : ''} ${i === S.idx ? 'now' : ''}" title="${esc(s.title)}"></i>`).join('');
@@ -787,10 +1155,13 @@ function renderRails() {
     const saved = ss.filter(s => S.saved[s.id]).length;
     return `<div class="rail" style="--c:${ACT_C[ai]}"><span class="nm">${esc(a)}</span><span class="slots">${ss.map(s => {
       const t = S.saved[s.id]; const i = p.shots.indexOf(s);
-      return `<button class="slot ${i === S.idx ? 'now' : ''}" data-i="${i}" title="${esc(s.title)}">${t ? `<img src="${t.thumb}" alt="">` : ''}</button>`;
+      return `<button class="slot ${i === S.idx ? 'now' : ''} ${t ? 'done' : ''}" data-i="${i}" title="${esc(s.title)}" aria-label="Shot ${i + 1}: ${esc(s.title)}${t ? ', recorded' : ''}">${t ? `<img src="${t.thumb}" alt="">` : pad2(i + 1)}</button>`;
     }).join('')}</span><span class="ct">${saved} / ${ss.length}</span></div>`;
   }).join('');
   $('#rails').querySelectorAll('.slot').forEach(b => b.onclick = () => goTo(+b.dataset.i, true));
+  $('#stripCount').textContent = `${Object.keys(S.saved).length} of ${p.shots.length} recorded`;
+  updateSteps();
+  { const n = $('#rails .slot.now'), r = $('#rails'); if (n) { const nb = n.getBoundingClientRect(), rb = r.getBoundingClientRect(); r.scrollLeft += nb.left - rb.left - rb.width / 2 + nb.width / 2; } }
 }
 $('#bPrev').onclick = () => goTo(S.idx - 1);
 $('#bSkip').onclick = () => advance();
@@ -834,7 +1205,7 @@ async function handleTake(file, hint = {}) {
     if (S.idx !== myIdx || S.current !== t) return;
     t.saved = t.pass;
     S.takes[s.id] = t;
-    if (t.pass) S.saved[s.id] = t;
+    if (t.pass) { S.saved[s.id] = t; t.justSaved = true; }
     showTake(t);
     renderDots(); renderRails();
     if (t.pass) {
@@ -863,14 +1234,14 @@ function showTake(t) {
     ph.innerHTML = `<video muted playsinline loop autoplay src="${t.url}"></video><canvas></canvas><div class="verdict"></div>`;
   }
   const v = ph.querySelector('.verdict');
-  v.className = 'verdict ' + (t.saved ? 'ok' : 'no');
+  v.className = 'verdict ' + (t.saved ? 'ok' + (t.justSaved ? ' pop' : '') : 'no'); t.justSaved = false;
   v.innerHTML = t.saved ? `<span>${t.overridden ? 'kept' : 'good shot'}</span><small>SAVED</small>` : `<span>${esc(t.short || 'not yet')}</span><small>RETAKE</small>`;
   drawOverlay(ph.querySelector('canvas'), t);
   $('#checks').innerHTML = `<h4>Shot ${S.plan.shots.indexOf(s) + 1} · ${esc(s.title)}</h4>` + t.checks.map(c => `
     <div class="ck ${c.status}"><div class="r"><span>${esc(c.label)}</span><span class="v">${esc(c.value)}</span></div>${c.note ? `<div class="note">${esc(c.note)}</div>` : ''}</div>`).join('');
   $('#bKeep').classList.toggle('hidden', t.saved);
   $('#bNext').classList.toggle('hidden', !t.saved);
-  $('#bPick').textContent = t.saved ? 'Replace take' : 'Retake';
+  setBtn($('#bPick'), t.saved ? 'upload' : 'repeat', t.saved ? 'Replace take' : 'Retake');
 }
 
 function drawOverlay(cv, t) {
@@ -1261,7 +1632,7 @@ async function startLive() {
     const src = ac.createMediaStreamSource(stream); analyser = ac.createAnalyser(); analyser.fftSize = 1024; src.connect(analyser); S.live.ac = ac;
   } catch (e) {}
   Object.assign(S.live, { on: true, stream, analyser, state: 'framing', okSince: null, lastCue: {}, lastCueAt: 0, prevG: null, shakes: [] });
-  document.body.classList.add('camfull'); $('#bLive').textContent = 'Close camera'; $('#bRec').classList.remove('recording');
+  document.body.classList.add('camfull'); setBtn($('#bLive'), 'x', 'Close camera'); $('#bRec').classList.remove('recording');
   $('#checks').innerHTML = '';
   try { const st = stream.getVideoTracks()[0].getSettings(); if (st.facingMode) S.live.facing = st.facingMode === 'user' ? 'user' : 'environment'; } catch (e) {}
   mountLive();
@@ -1435,7 +1806,8 @@ function mountLive() {
   v.addEventListener('loadedmetadata', fit); v.addEventListener('resize', fit); fit();
   applyDigital();
   S.live.state = 'framing'; S.live.okSince = null; S.live.prevG = null; S.live.shakes = [];
-  $('#camShot').textContent = `Shot ${S.idx + 1} of ${S.plan.shots.length} · ${s.title}`;
+  $('#camShot').textContent = `SHOT ${pad2(S.idx + 1)} / ${pad2(S.plan.shots.length)}`;
+  $('#camFraming').textContent = FRAME_NAME[s.framing];
   { const sv = S.saved[s.id], th = $('#camThumb'); th.style.backgroundImage = sv && sv.thumb ? `url(${sv.thumb})` : ''; th.style.visibility = sv ? 'visible' : 'hidden'; }
   // give him time to hear the direction and get into place before cues or auto-record
   const words = wordsIn(s.direction) + wordsIn(s.line);
@@ -1448,7 +1820,7 @@ async function stopLive(keepState) {
   if (S.live.stream) S.live.stream.getTracks().forEach(t => t.stop());
   try { S.live.ac && S.live.ac.close(); } catch (e) {}
   S.live.on = false; S.live.state = 'off';
-  $('#bLive').textContent = 'Open camera'; $('#bRec').classList.remove('recording'); closeSheet();
+  setBtn($('#bLive'), 'cam', 'Open camera'); $('#bRec').classList.remove('recording'); closeSheet();
   if (!keepState) document.body.classList.remove('camfull');
   if (!keepState) { const t = S.takes[shot().id]; if (t) showTake(t); else resetCard(); }
 }
@@ -1760,21 +2132,21 @@ function openSaved(id) {
 }
 function renderLib() {
   $('#libCount').textContent = LIB.length ? `(${LIB.length})` : '';
-  if (!LIB.length) { $('#libList').innerHTML = '<p class="muted" style="margin:6px 0 0;font-size:13.5px">Scripts you save land here, ready to film whenever you are.</p>'; return; }
+  if (!LIB.length) { $('#libList').innerHTML = '<div class="empty" style="padding:24px 0;text-align:left"><p class="muted" style="margin:0;font-size:14px">No saved scripts yet. Tap Save on any script and it lands here, ready to film whenever you are.</p></div>'; return; }
   const day = t => new Date(t).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   const sorted = LIB.slice().sort((a, b) => (a.status === 'filmed') - (b.status === 'filmed') || b.savedAt - a.savedAt);
   $('#libList').innerHTML = sorted.map(it => {
     const h = (it.data.hooks || [])[it.hook || 0] || {};
     return `<div class="libitem" data-id="${esc(it.id)}"><div>
-      <div><b>${esc(it.title)}</b> <span class="tag ${it.status}">${it.status === 'filmed' ? 'filmed' : 'to film'}</span></div>
-      <div class="muted" style="font-size:12.5px">${it.secs}s · ${esc(FMT_NAME[it.fmt] || '')} · saved ${day(it.savedAt)}</div>
+      <div class="spread" style="gap:8px"><b style="font-size:15.5px">${esc(it.title)}</b> <span class="tag ${it.status}">${it.status === 'filmed' ? 'Filmed' : 'To film'}</span></div>
+      <div class="muted" style="font-size:13px;margin:2px 0 6px">${it.secs}s · ${esc(FMT_NAME[it.fmt] || '')} · saved ${day(it.savedAt)}</div>
       <div class="hk">${esc(h.say || '')}</div></div>
-      <div class="acts"><button class="btn" data-a="open">Open</button><button class="btn primary" data-a="film">Film it</button><button class="btn ghost" data-a="mark">${it.status === 'filmed' ? 'Mark to film' : 'Mark filmed'}</button><button class="btn ghost" data-a="del">Delete</button></div></div>`;
+      <div class="acts"><button class="btn sm primary" data-a="film">Film it</button><button class="btn sm" data-a="open">Open</button><button class="btn sm ghost" data-a="mark">${it.status === 'filmed' ? 'Mark to film' : 'Mark filmed'}</button><button class="btn sm ghost" data-a="del">Delete</button></div></div>`;
   }).join('');
   $('#libList').querySelectorAll('.libitem').forEach(row => row.querySelectorAll('button').forEach(b => b.onclick = () => {
     const id = row.dataset.id, it = libItem(id), a = b.dataset.a;
-    if (a === 'open') { openSaved(id); $('#scriptOut').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    else if (a === 'film') { openSaved(id); $('#bScShoot').click(); }
+    if (a === 'open') { closeDrawers(); setView('script'); openSaved(id); $('#scriptOut').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    else if (a === 'film') { closeDrawers(); openSaved(id); $('#bScShoot').click(); }
     else if (a === 'mark') { it.status = it.status === 'filmed' ? 'tofilm' : 'filmed'; persistLib(); }
     else if (a === 'del') {
       if (b.dataset.armed) { LIB = LIB.filter(x => x.id !== id); if (SC && SC.id === id) delete SC.id; persistLib(); if (SC) renderScript(); toast('Deleted'); }
@@ -1877,7 +2249,12 @@ async function writeScript(mode = 'new') {
   if (!aiOn()) { toast('Script writing needs Claude'); return; }
   const secs = +$('#scLen').value, fmtv = $('#scFormat').value, type = $('#scType').value, cta = $('#scCta').value.trim();
   const words = Math.round(secs * VP.wps);
-  const btn = $('#bWrite'); btn.disabled = true; $('#scStatus').textContent = mode === 'new' ? 'Writing your script…' : 'Rewriting…';
+  const btn = $('#bWrite'); btn.disabled = true; $('#scStatus').textContent = '';
+  const tools = document.querySelectorAll('#scriptOut .ed-tools .btn'); tools.forEach(b => b.disabled = true);
+  $('#scriptOut').classList.add('hidden'); $('#scSkel').classList.remove('hidden');
+  const msgs = mode === 'new' ? ['Finding your hook…', 'Building the stakes…', 'Timing it to your pace…', 'Checking it sounds like you…'] : ['Rewriting…', 'Keeping your voice…', 'Re-timing the beats…'];
+  let mi = 0; $('#scGenMsg').textContent = msgs[0]; const mt = setInterval(() => { mi = (mi + 1) % msgs.length; $('#scGenMsg').textContent = msgs[mi]; }, 2600);
+  $('#scSkel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   const FORMAT = { talk: 'Talking to camera the whole way, with jump cuts and occasional cutaways.', vo: 'Voiceover over b-roll; every beat is a b-roll shot he films, with the line as voiceover.', mixed: 'Talking to camera for the hook and key claims, b-roll cutaways under the explanation and test.' }[fmtv];
   const base = mode === 'new' ? `STORY / IDEA FROM SHANE:\n${story}` : `CURRENT SCRIPT (JSON):\n${JSON.stringify(SC.data)}\nREWRITE INSTRUCTION: ${mode}`;
   const prompt = `You write short-form video scripts for Shane Wuerthner, built for maximum retention and written in his natural speaking voice. Every line must sound like something he would actually say in a studio, not like marketing copy.
@@ -1912,7 +2289,9 @@ Return ONLY JSON:
     const cl = o => { if (typeof o === 'string') return cleanCopy(o); if (Array.isArray(o)) return o.map(cl); if (o && typeof o === 'object') { const r = {}; for (const k in o) r[k] = cl(o[k]); return r; } return o; };
     SC = { data: cl(j), hook: 0, secs, fmt: fmtv, type, story: story || (SC && SC.story), id: mode === 'new' ? undefined : (SC && SC.id) };
     saveScript(); renderScript(); $('#scStatus').textContent = '';
-  } catch (e) { $('#scStatus').textContent = e && e.code === 'rate_limited' ? 'Too many requests. Try again in a minute.' : 'Could not write that one. Try again.'; }
+  } catch (e) { $('#scStatus').textContent = e && e.code === 'rate_limited' ? 'Too many requests. Try again in a minute.' : 'Could not write that one. Try again.'; $('#scStatus').classList.add('err'); if (SC) $('#scriptOut').classList.remove('hidden'); }
+  clearInterval(mt); $('#scSkel').classList.add('hidden'); tools.forEach(b => b.disabled = false); if (SC && libItem(SC.id)) $('#bScSave').disabled = true;
+  if (!$('#scStatus').textContent) $('#scStatus').classList.remove('err');
   btn.disabled = false;
 }
 function scriptLines() {
@@ -1926,17 +2305,24 @@ function renderScript() {
   const d = SC.data; $('#scriptOut').classList.remove('hidden');
   $('#scTitle').textContent = d.title || 'Script';
   const saved = !!libItem(SC.id);
-  $('#bScSave').textContent = saved ? 'Saved' : 'Save for later'; $('#bScSave').disabled = saved;
-  $('#scHooks').innerHTML = d.hooks.map((h, i) => `<div class="hook ${i === SC.hook ? 'on' : ''}" data-i="${i}"><span class="mono" style="color:var(--gold);min-width:20px">${i + 1}</span><div><div class="say">${esc(h.say)}</div><div class="muted" style="font-size:12.5px;margin-top:3px">${esc(h.type || '')} · text: ${esc(h.on_screen || '')} · ${wordsIn(h.say)} words${wordsIn(h.say) > 15 ? ' <span style="color:var(--warn)">(over 15)</span>' : ''}</div></div></div>`).join('');
+  setBtn($('#bScSave'), saved ? 'check' : 'save', saved ? 'Saved' : 'Save'); $('#bScSave').disabled = saved;
+  $('#scHooks').innerHTML = d.hooks.map((h, i) => `<div class="hook ${i === SC.hook ? 'on' : ''}" data-i="${i}" role="radio" aria-checked="${i === SC.hook}" tabindex="0"><span class="radio"></span><div><div class="say">${esc(h.say)}</div><div class="meta">${esc(h.type || '')}${h.on_screen ? ' · on screen: ' + esc(h.on_screen) : ''} · ${wordsIn(h.say)} words${wordsIn(h.say) > 15 ? ' <span style="color:#9A6315">(over 15)</span>' : ''}</div></div></div>`).join('');
+  $('#scHooks').querySelectorAll('.hook').forEach(el => el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
   $('#scHooks').querySelectorAll('.hook').forEach(el => el.onclick = () => { SC.hook = +el.dataset.i; saveScript(); renderScript(); });
   let t = 0; const L = scriptLines(); let total = 0;
-  $('#scBeats').innerHTML = L.map((b, i) => {
+  const partOf = i => i === 0 ? 'hook' : i === L.length - 1 ? 'cta' : (i === L.length - 2 && L.length > 3) ? 'payoff' : 'story';
+  const PART_N = { hook: 'Hook', story: 'Story', payoff: 'Payoff', cta: 'Call to action' };
+  const groups = [];
+  L.forEach((b, i) => {
     const w = wordsIn(b.say), dur = w / VP.wps, st = t; t += dur; total += w;
     const warn = dur > 4 ? `<div class="warn">${dur.toFixed(1)}s on one shot. Split it or add a cutaway.</div>` : '';
-    return `<div class="beat"><div class="tm">${fmtT(st)}<br><span class="muted">${b.kind}</span></div><div>
+    const html = `<div class="beat"><div class="tm">${fmtT(st)}</div><div>
       <div class="say" contenteditable="true" data-i="${i}">${esc(b.say)}</div>
-      <div class="meta">${b.on_screen ? 'Text: ' + esc(b.on_screen) + ' · ' : ''}${esc(b.shot && b.shot.framing || '')}: ${esc(b.shot && b.shot.direction || '')}${b.device ? ' · ' + esc(b.device) : ''}</div>${warn}</div></div>`;
-  }).join('');
+      <div class="meta">${b.on_screen ? `<span class="tag">${esc(b.on_screen)}</span>` : ''}<span>${esc(FRAME_SHORT[b.shot && b.shot.framing] || '')}${b.shot && b.shot.direction ? ': ' + esc(b.shot.direction) : ''}</span>${b.device ? '<span>· ' + esc(b.device) + '</span>' : ''}</div>${warn}</div></div>`;
+    const k = partOf(i), g = groups[groups.length - 1];
+    if (g && g.k === k) g.h += html; else groups.push({ k, h: html });
+  });
+  $('#scBeats').innerHTML = groups.map(g => `<div class="part"><div class="part-lbl k-${g.k}">${PART_N[g.k]}</div><div>${g.h}</div></div>`).join('');
   $('#scBeats').querySelectorAll('.say[data-i]').forEach(el => el.addEventListener('blur', () => {
     const i = +el.dataset.i, v = cleanCopy(el.textContent.trim());
     if (i === 0) d.hooks[SC.hook].say = v; else if (i === L.length - 1) d.cta.say = v; else d.beats[i - 1].say = v;
@@ -1944,7 +2330,8 @@ function renderScript() {
   }));
   const est = total / VP.wps;
   const off = Math.abs(est - SC.secs) / SC.secs;
-  $('#scStats').innerHTML = `About <b>${Math.round(est)} seconds</b> at your pace (target ${SC.secs}) · ${total} words · ${L.length} visual changes, one every ${(est / L.length).toFixed(1)}s${off > .15 ? ` · <span style="color:var(--warn)">${est > SC.secs ? 'long' : 'short'} for the target</span>` : ''}`;
+  $('#scStats').innerHTML = `<span><b>${Math.round(est)}s</b> at your pace</span><span>target ${SC.secs}s</span><span>${total} words</span><span>a new shot every ${(est / L.length).toFixed(1)}s</span>${off > .15 ? `<span class="tag pending">${est > SC.secs ? 'Long' : 'Short'} for the target</span>` : ''}`;
+  updateSteps();
   $('#scWhy').textContent = d.why_it_holds || '';
   $('#scCaption').textContent = d.caption || '';
 }
@@ -1973,7 +2360,7 @@ $('#bScShoot').onclick = () => {
   });
   S.plan = normalisePlan({ title: SC.data.title, acts, shots });
   if (SC.id) S.plan.scriptId = SC.id;
-  savePlan(); setView('plan'); renderPlan();
+  S.saved = {}; S.t0 = 0; savePlan(); setView('plan'); renderPlan();
   toast('Shot list built from your script');
 };
 
@@ -1981,11 +2368,10 @@ $('#bScShoot').onclick = () => {
 function setView(v) {
   if (v === 'shoot' && !S.plan) return;
   show(v);
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   if (v !== 'shoot' && S.live.on) stopLive(true);
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { if (b.dataset.v === 'shoot' && !S.t0) return; setView(b.dataset.v); if (b.dataset.v === 'shoot') goTo(S.idx, false); });
-renderVoice(); renderLib(); if (SC) { renderScript(); }
+renderVoice(); renderLib(); if (SC) { renderScript(); } updateSteps();
 
 /* ---------------- Finish & export ---------------- */
 const slug = s => String(s).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'shot';
@@ -2022,14 +2408,27 @@ function finish() {
   const L = fileList();
   const total = L.reduce((a, f) => a + f.t.dur, 0);
   const mins = Math.round((Date.now() - S.t0) / 60000);
-  $('#doneSummary').textContent = `${L.length} of ${S.plan.shots.length} shots, ${total.toFixed(0)} seconds of usable footage, filmed in ${mins} minute${mins === 1 ? '' : 's'}. Named in story order and grouped by act.`;
-  $('#files').innerHTML = L.map(f => `<div class="file"><img src="${f.t.thumb}" alt=""><div><div class="fn">${esc(f.name)}</div><div class="muted" style="font-size:12.5px">${esc(S.plan.acts[f.s.act])} · ${f.t.dur.toFixed(1)}s · ${esc(f.t.light || '')}</div></div><span class="tag" style="color:${ACT_C[f.s.act]}">${esc(S.plan.acts[f.s.act])}</span></div>`).join('');
+  const P = S.plan, missing = P.shots.filter(s => !S.saved[s.id]);
+  const takes = Object.values(S.takes || {}).reduce((a, t) => a + (t.attempt || 1), 0);
+  $('#doneSummary').textContent = L.length ? `Named in story order and grouped by act, ready to drop into your editor.${missing.length ? ` ${missing.length} shot${missing.length === 1 ? ' is' : 's are'} still missing.` : ''}` : 'No takes saved yet. Head back to recording to capture your first shot.';
+  $('#doneEyebrow').textContent = P.title;
+  $('#doneH').textContent = !L.length ? 'Nothing recorded yet.' : missing.length ? 'Your footage so far.' : 'Your footage is ready.';
+  $('#doneStats').innerHTML = [['Shots recorded', `${L.length}<small> / ${P.shots.length}</small>`], ['Takes', takes], ['Footage', `${total.toFixed(0)}<small>s</small>`], ['Missing', missing.length]].map(([k, v]) => `<div class="card stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  $('#fmTitle').textContent = `${slug(P.title)}/`;
+  $('#files').innerHTML = P.acts.map((a, ai) => {
+    const ss = P.shots.filter(s => s.act === ai);
+    return `<div class="folder"><div class="folder-h">${ICON('folder')}${esc(slug(a))}/<span class="muted" style="font-weight:500;margin-left:auto;font-size:13px">${ss.filter(s => S.saved[s.id]).length} of ${ss.length}</span></div>` + ss.map(s => {
+      const f = L.find(x => x.s === s);
+      return f ? `<div class="file"><img src="${f.t.thumb}" alt=""><div><div class="fn">${esc(f.name)}</div><div class="fd">${esc(s.title)}${f.t.overridden ? ' · kept despite checks' : ''}</div></div><span class="fd fs">${f.t.dur.toFixed(1)}s</span><span class="tag ok">${ICON('check')}Ready</span></div>`
+        : `<div class="file missing"><span class="ph"></span><div><div style="font-weight:550">Shot ${P.shots.indexOf(s) + 1} · ${esc(s.title)}</div><div class="fd">${esc(FRAME_SHORT[s.framing])}</div></div><span class="fd fs"></span><span class="tag pending">Missing</span></div>`;
+    }).join('') + '</div>';
+  }).join('');
   $('#bZip').classList.toggle('hidden', !L.length);
   $('#zipStatus').textContent = '';
   speak("Done. Everything's organised. Your footage is ready.", 'DIRECTOR', 'pass');
 }
 $('#bBackToShoot').onclick = () => { show('shoot'); goTo(S.idx, false); };
-$('#bNew').onclick = () => { show('plan'); $('#clock').classList.add('hidden'); $('#dots').innerHTML = ''; };
+$('#bNew').onclick = () => { S.t0 = 0; S.saved = {}; S.takes = {}; show('plan'); $('#planOut').classList.add('hidden'); $('#planEmpty').classList.remove('hidden'); $('#clock').classList.add('hidden'); $('#dots').innerHTML = ''; updateSteps(); };
 $('#bCopy').onclick = async () => {
   const txt = shotListText(); const b = $('#copyBox'); b.value = txt;
   try { await navigator.clipboard.writeText(txt); toast('Shot list copied'); b.classList.add('hidden'); }
