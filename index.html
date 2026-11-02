@@ -189,11 +189,19 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
     <div class="card" id="libCard" style="margin-bottom:16px">
       <div class="row" style="justify-content:space-between">
         <span class="mono">Saved scripts <span class="muted" id="libCount"></span></span>
-        <div class="row"><button class="btn ghost" id="bLibExport">Copy to another device</button><button class="btn ghost" id="bLibImport">Paste from another device</button></div>
+        <div class="row"><button class="btn ghost" id="bLibExport">Send to another device</button><button class="btn ghost" id="bLibImport">Add from another device</button></div>
       </div>
       <div id="libList" style="margin-top:6px"></div>
       <textarea class="copy hidden" id="libBox" placeholder="Paste the code you copied on your other device"></textarea>
-      <div class="row hidden" id="libImpRow" style="margin-top:8px"><button class="btn primary" id="bLibImpGo">Add these scripts</button></div>
+      <div class="hidden" id="libExpRow" style="margin-top:8px;font-size:13.5px">
+        <p class="muted" style="margin:0 0 8px" id="libExpMsg"></p>
+        <div class="row"><button class="btn" id="bLibCopy">Copy link</button><button class="btn" id="bLibShare">Share…</button><button class="btn ghost" id="bLibFile">Save as file</button></div>
+      </div>
+      <div class="hidden" id="libImpRow" style="margin-top:8px">
+        <p class="muted" style="margin:0 0 8px;font-size:13.5px">Paste the link or code from your other device, or open the file you sent yourself.</p>
+        <div class="row"><button class="btn primary" id="bLibImpGo">Add these scripts</button><label class="btn ghost" for="libFile">Open file</label><input type="file" id="libFile" accept=".json,.txt,application/json,text/plain" class="hidden"></div>
+        <p style="margin:8px 0 0;font-size:12.5px;color:var(--warn)" id="libImpErr"></p>
+      </div>
     </div>
     <div class="grid2" style="align-items:start">
       <div class="card form">
@@ -1622,23 +1630,91 @@ function renderLib() {
   }));
 }
 $('#bScSave').onclick = saveForLater;
+/* moving scripts between devices: a short compressed code inside a link, a file, or pasted text */
+const inClaude = !!window.claude || window.top !== window.self;
+const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = str => { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+async function gz(bytes, dir) {
+  const S2 = dir === 'c' ? new CompressionStream('gzip') : new DecompressionStream('gzip');
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(S2)).arrayBuffer());
+}
+async function encodeLib(list) {
+  const raw = new TextEncoder().encode(JSON.stringify(list));
+  if (window.CompressionStream) { try { return 'SD2.' + b64u(await gz(raw, 'c')) + '.'; } catch (e) {} }
+  return 'SD1.' + b64u(raw) + '.';
+}
+async function decodeLib(text) {
+  let t = String(text || '');
+  const m = t.match(/import=([A-Za-z0-9._-]+)/); if (m) t = m[1];
+  t = t.trim();
+  if (/^\s*\[/.test(t)) return JSON.parse(t);                       // a saved .json file
+  if (/^SDLIB:/.test(t)) { const b = t.replace(/^SDLIB:/, '').replace(/[^A-Za-z0-9+/=]/g, ''); return JSON.parse(decodeURIComponent(escape(atob(b)))); }
+  const v = t.match(/SD([12])\.([A-Za-z0-9_\-\s]+)\./);
+  if (!v) throw new Error(/SD[12]\./.test(t) ? 'cut short' : 'no code found');
+  const body = v[2].replace(/[^A-Za-z0-9_-]/g, '');
+  let bytes = unb64u(body);
+  if (v[1] === '2') bytes = await gz(bytes, 'd');
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function mergeLib(list) {
+  if (!Array.isArray(list)) throw new Error('not a script list');
+  let n = 0;
+  list.forEach(it => { if (it && it.id && it.data && !libItem(it.id)) { LIB.push(it); n++; } });
+  persistLib();
+  return n;
+}
+let EXP = null;
 $('#bLibExport').onclick = async () => {
   if (!LIB.length) { toast('No saved scripts yet'); return; }
-  const code = 'SDLIB:' + btoa(unescape(encodeURIComponent(JSON.stringify(LIB))));
-  try { await navigator.clipboard.writeText(code); toast(`Copied ${LIB.length} script${LIB.length === 1 ? '' : 's'}. Paste on your other device.`); }
-  catch (e) { const b = $('#libBox'); b.value = code; b.classList.remove('hidden'); b.select(); toast('Select and copy the code below'); }
+  const code = await encodeLib(LIB);
+  EXP = { code, link: inClaude ? '' : `${location.origin}${location.pathname}#import=${code}` };
+  $('#libImpRow').classList.add('hidden'); $('#libBox').classList.add('hidden');
+  $('#libExpRow').classList.remove('hidden');
+  $('#libExpMsg').textContent = EXP.link
+    ? `${LIB.length} script${LIB.length === 1 ? '' : 's'} ready. Send the link to yourself and open it on your other device; the scripts add themselves. For AirDrop, save it as a file instead.`
+    : `${LIB.length} script${LIB.length === 1 ? '' : 's'} ready. Copy the code and paste it into "Add from another device" on the other device, or save it as a file.`;
+  $('#bLibCopy').textContent = EXP.link ? 'Copy link' : 'Copy code';
+  $('#bLibShare').classList.toggle('hidden', !navigator.share || inClaude);
 };
-$('#bLibImport').onclick = () => { const b = $('#libBox'); b.value = ''; b.classList.remove('hidden'); $('#libImpRow').classList.remove('hidden'); b.focus(); };
-$('#bLibImpGo').onclick = () => {
+$('#bLibCopy').onclick = async () => {
+  const v = EXP.link || EXP.code;
+  try { await navigator.clipboard.writeText(v); toast(EXP.link ? 'Link copied' : 'Code copied'); }
+  catch (e) { const b = $('#libBox'); b.value = v; b.classList.remove('hidden'); b.select(); toast('Select and copy the text below'); }
+};
+$('#bLibShare').onclick = async () => { try { await navigator.share({ title: 'Shoot Director scripts', text: 'Open on your other device to add these scripts', url: EXP.link }); } catch (e) {} };
+$('#bLibFile').onclick = async () => {
+  const name = `shoot-director-scripts-${new Date().toISOString().slice(0, 10)}.json`;
+  const blob = new Blob([JSON.stringify(LIB)], { type: 'application/json' });
+  if (S.downloads) { try { await S.downloads.save({ filename: name, data: blob }); } catch (e) {} return; }
+  if (navigator.canShare && navigator.canShare({ files: [new File([blob], name, { type: 'application/json' })] })) {
+    try { await navigator.share({ files: [new File([blob], name, { type: 'application/json' })], title: 'Shoot Director scripts' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+};
+$('#bLibImport').onclick = () => { $('#libExpRow').classList.add('hidden'); const b = $('#libBox'); b.value = ''; b.classList.remove('hidden'); $('#libImpRow').classList.remove('hidden'); $('#libImpErr').textContent = ''; b.focus(); };
+async function importText(text, from) {
   try {
-    const raw = $('#libBox').value.trim().replace(/^SDLIB:/, '');
-    const list = JSON.parse(decodeURIComponent(escape(atob(raw))));
-    let n = 0;
-    list.forEach(it => { if (it && it.id && it.data && !libItem(it.id)) { LIB.push(it); n++; } });
-    persistLib(); $('#libBox').classList.add('hidden'); $('#libImpRow').classList.add('hidden');
+    const n = mergeLib(await decodeLib(text));
+    $('#libBox').classList.add('hidden'); $('#libImpRow').classList.add('hidden');
     toast(n ? `Added ${n} script${n === 1 ? '' : 's'}` : 'Those scripts are already here');
-  } catch (e) { toast("That code didn't read. Copy it again on the other device."); }
-};
+    return true;
+  } catch (e) {
+    const t = String(text || '').trim();
+    $('#libImpErr').textContent = !t ? 'Nothing was pasted.'
+      : /SD[12]\.|SDLIB:|import=/.test(t) ? `That ${from} looks cut short (${t.length} characters arrived). Send it again as a link or a file rather than a long text message.`
+      : `That doesn't look like a Shoot Director ${from}. Use "Send to another device" on the device that has the scripts.`;
+    return false;
+  }
+}
+$('#bLibImpGo').onclick = () => importText($('#libBox').value, 'code');
+$('#libFile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (f) importText(await f.text(), 'file'); };
+(async () => {
+  if (inClaude || !/^#import=/.test(location.hash)) return;
+  const code = location.hash.slice(8);
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  try { const n = mergeLib(await decodeLib(code)); setTimeout(() => { setView('script'); toast(n ? `Added ${n} script${n === 1 ? '' : 's'} from your other device` : 'Those scripts are already here'); }, 300); }
+  catch (e) { setTimeout(() => toast('That link was cut short. Send it again or use a file.'), 300); }
+})();
 const wordsIn = t => String(t || '').split(/\s+/).filter(Boolean).length;
 const fmtT = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 $('#bWrite').onclick = () => writeScript();
