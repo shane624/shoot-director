@@ -622,6 +622,7 @@ body.camfull #camSheet.on{transform:none}
           <button class="btn primary big" id="bLive"><svg class="i"><use href="#i-cam"/></svg>Open camera</button>
           <button class="btn big" id="bPick"><svg class="i"><use href="#i-upload"/></svg>Upload a take</button>
           <button class="btn big hidden" id="bKeep">Keep it anyway</button>
+          <button class="btn big hidden" id="bSaveTake"><svg class="i"><use href="#i-dl"/></svg>Save to Photos</button>
           <button class="btn primary big hidden" id="bNext">Next shot<svg class="i"><use href="#i-next"/></svg></button>
         </div>
         <input type="file" id="fTake" accept="video/*" class="hidden">
@@ -1141,7 +1142,7 @@ function resetCard() {
   ph.className = 'phone drop';
   ph.innerHTML = `<div><div class="up">${ICON('cam')}</div><div class="big">${esc(shot().title)}</div><div class="hint">${esc(hintFor(shot()))}</div><div class="hint" style="margin-top:14px;opacity:.7">Open the camera, or drop a video here</div></div>`;
   $('#checks').innerHTML = '';
-  $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden');
+  $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden'); $('#bSaveTake').classList.add('hidden');
   setBtn($('#bPick'), 'upload', 'Upload a take');
 }
 function renderDots() {
@@ -1184,7 +1185,7 @@ phone.addEventListener('click', () => { if (phone.classList.contains('drop')) $(
 ['dragover', 'dragenter'].forEach(ev => phone.addEventListener(ev, e => { e.preventDefault(); phone.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => phone.addEventListener(ev, e => { e.preventDefault(); phone.classList.remove('over'); }));
 phone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f && /^video\//.test(f.type || 'video/')) handleTake(f); });
-$('#bKeep').onclick = () => { const t = S.takes[shot().id]; if (!t) return; t.saved = true; t.overridden = true; S.saved[t.shotId] = t; showTake(t); renderDots(); renderRails(); speak('Kept. Moving on.', 'DIRECTOR', 'pass').then(() => setTimeout(advance, 500)); };
+$('#bKeep').onclick = () => { const t = S.takes[shot().id]; if (!t) return; t.saved = true; t.overridden = true; S.saved[t.shotId] = t; S.lastSavedId = t.shotId; showTake(t); renderDots(); renderRails(); speak('Kept. Moving on.', 'DIRECTOR', 'pass').then(() => setTimeout(advance, 500)); };
 
 async function handleTake(file, hint = {}) {
   const s = shot(); const myIdx = S.idx;
@@ -1198,14 +1199,14 @@ async function handleTake(file, hint = {}) {
   ph.className = 'phone';
   ph.innerHTML = `<video muted playsinline loop autoplay src="${url}"></video><canvas></canvas><div class="verdict wait"><span>checking</span><small>WAIT</small></div>`;
   $('#checks').innerHTML = `<h4>Shot ${S.idx + 1} · ${esc(s.title)}</h4><div class="ck neutral"><div class="r"><span>reading the take</span><span class="v">…</span></div></div>`;
-  $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden');
+  $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden'); $('#bSaveTake').classList.add('hidden');
   try {
     const r = await analyseTake(file, s, hint);
     Object.assign(t, r);
     if (S.idx !== myIdx || S.current !== t) return;
     t.saved = t.pass;
     S.takes[s.id] = t;
-    if (t.pass) { S.saved[s.id] = t; t.justSaved = true; }
+    if (t.pass) { S.saved[s.id] = t; t.justSaved = true; S.lastSavedId = s.id; }
     showTake(t);
     renderDots(); renderRails();
     if (t.pass) {
@@ -1235,11 +1236,12 @@ function showTake(t) {
   }
   const v = ph.querySelector('.verdict');
   v.className = 'verdict ' + (t.saved ? 'ok' + (t.justSaved ? ' pop' : '') : 'no'); t.justSaved = false;
-  v.innerHTML = t.saved ? `<span>${t.overridden ? 'kept' : 'good shot'}</span><small>SAVED</small>` : `<span>${esc(t.short || 'not yet')}</span><small>RETAKE</small>`;
+  v.innerHTML = t.saved ? `<span>${t.overridden ? 'kept' : 'good shot'}</span><small>KEPT</small>` : `<span>${esc(t.short || 'not yet')}</span><small>RETAKE</small>`;
   drawOverlay(ph.querySelector('canvas'), t);
   $('#checks').innerHTML = `<h4>Shot ${S.plan.shots.indexOf(s) + 1} · ${esc(s.title)}</h4>` + t.checks.map(c => `
     <div class="ck ${c.status}"><div class="r"><span>${esc(c.label)}</span><span class="v">${esc(c.value)}</span></div>${c.note ? `<div class="note">${esc(c.note)}</div>` : ''}</div>`).join('');
   $('#bKeep').classList.toggle('hidden', t.saved);
+  $('#bSaveTake').classList.toggle('hidden', !t.saved); setBtn($('#bSaveTake'), t.exported ? 'check' : 'dl', t.exported ? 'Saved to Photos' : 'Save to Photos');
   $('#bNext').classList.toggle('hidden', !t.saved);
   setBtn($('#bPick'), t.saved ? 'upload' : 'repeat', t.saved ? 'Replace take' : 'Retake');
 }
@@ -1689,7 +1691,7 @@ $('#camGear').onclick = openSheet;
 $('#camScrim').onclick = closeSheet;
 $('#camSheet .grab').onclick = closeSheet;
 $('#camClose').onclick = () => { if (S.live.state === 'recording') stopRecording(); stopLive(); };
-$('#camThumb').onclick = () => stopLive();
+$('#camThumb').onclick = async () => { const id = S.lastSavedId; await stopLive(); const i = S.plan.shots.findIndex(x => x.id === id); if (i >= 0) goTo(i, false); };
 document.addEventListener('keydown', e => {
   if (!document.body.classList.contains('camfull') || /INPUT|SELECT|TEXTAREA/.test((e.target || {}).tagName || '')) return;
   if (e.key === 'Escape') { if ($('#camSheet').classList.contains('on')) closeSheet(); else $('#camClose').click(); }
@@ -1829,7 +1831,7 @@ function mountLive() {
   S.live.state = 'framing'; S.live.okSince = null; S.live.prevG = null; S.live.shakes = [];
   $('#camShot').textContent = `SHOT ${pad2(S.idx + 1)} / ${pad2(S.plan.shots.length)}`;
   $('#camFraming').textContent = FRAME_NAME[s.framing];
-  { const sv = S.saved[s.id], th = $('#camThumb'); th.style.backgroundImage = sv && sv.thumb ? `url(${sv.thumb})` : ''; th.style.visibility = sv ? 'visible' : 'hidden'; }
+  { const sv = S.saved[S.lastSavedId] || S.saved[s.id], th = $('#camThumb'); th.style.backgroundImage = sv && sv.thumb ? `url(${sv.thumb})` : ''; th.style.visibility = sv ? 'visible' : 'hidden'; }
   // give him time to hear the direction and get into place before cues or auto-record
   const words = wordsIn(s.direction) + wordsIn(s.line);
   S.live.armAt = performance.now() + 3500 + words * 380;
@@ -2396,6 +2398,28 @@ renderVoice(); renderLib(); if (SC) { renderScript(); } updateSteps();
 
 /* ---------------- Finish & export ---------------- */
 const slug = s => String(s).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'shot';
+/* Save one take to the camera roll: the iPhone share sheet has "Save Video"; elsewhere it downloads */
+function takeName(s, t) {
+  const p = S.plan, i = p.shots.indexOf(s);
+  const ext = (t.file.name.match(/\.[a-z0-9]+$/i) || ['.mp4'])[0].toLowerCase();
+  return `${String(i + 1).padStart(2, '0')}_${slug(p.acts[s.act])}_${slug(s.title)}${ext}`;
+}
+async function saveTake(s, btn) {
+  const t = S.saved[s.id]; if (!t) return;
+  const f = new File([t.file], takeName(s, t), { type: t.file.type || 'video/mp4' });
+  const done = () => { t.exported = true; if (btn) setBtn(btn, 'check', btn.id === 'bSaveTake' ? 'Saved to Photos' : 'Saved'); };
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [f] })) {
+      await navigator.share({ files: [f] }); done(); return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try {
+    if (S.downloads) await S.downloads.save({ filename: f.name, data: f });
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+    done(); toast(matchMedia('(pointer: coarse)').matches ? 'Downloaded. Open it in Files to save to Photos' : 'Clip downloaded');
+  } catch (e) { if (!(e && e.code === 'declined')) toast('Could not save that clip'); }
+}
+$('#bSaveTake').onclick = () => saveTake(shot(), $('#bSaveTake'));
 function fileList() {
   const p = S.plan; let n = 0;
   return p.shots.map((s, i) => {
@@ -2440,10 +2464,11 @@ function finish() {
     const ss = P.shots.filter(s => s.act === ai);
     return `<div class="folder"><div class="folder-h">${ICON('folder')}${esc(slug(a))}/<span class="muted" style="font-weight:500;margin-left:auto;font-size:13px">${ss.filter(s => S.saved[s.id]).length} of ${ss.length}</span></div>` + ss.map(s => {
       const f = L.find(x => x.s === s);
-      return f ? `<div class="file"><img src="${f.t.thumb}" alt=""><div><div class="fn">${esc(f.name)}</div><div class="fd">${esc(s.title)}${f.t.overridden ? ' · kept despite checks' : ''}</div></div><span class="fd fs">${f.t.dur.toFixed(1)}s</span><span class="tag ok">${ICON('check')}Ready</span></div>`
+      return f ? `<div class="file"><img src="${f.t.thumb}" alt=""><div><div class="fn">${esc(f.name)}</div><div class="fd">${esc(s.title)}${f.t.overridden ? ' · kept despite checks' : ''}</div></div><span class="fd fs">${f.t.dur.toFixed(1)}s</span><button class="btn sm" data-save="${s.id}">${ICON(f.t.exported ? 'check' : 'dl')}${f.t.exported ? 'Saved' : 'Save'}</button></div>`
         : `<div class="file missing"><span class="ph"></span><div><div style="font-weight:550">Shot ${P.shots.indexOf(s) + 1} · ${esc(s.title)}</div><div class="fd">${esc(FRAME_SHORT[s.framing])}</div></div><span class="fd fs"></span><span class="tag pending">Missing</span></div>`;
     }).join('') + '</div>';
   }).join('');
+  $('#files').querySelectorAll('[data-save]').forEach(b => b.onclick = () => saveTake(P.shots.find(x => x.id === b.dataset.save), b));
   $('#bZip').classList.toggle('hidden', !L.length);
   $('#zipStatus').textContent = '';
   speak("Done. Everything's organised. Your footage is ready.", 'DIRECTOR', 'pass');
