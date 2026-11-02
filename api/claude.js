@@ -18,9 +18,11 @@ export default async function handler(req, res) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODELS[tier] || MODELS.default, max_tokens: 4000, messages: [{ role: 'user', content }] })
+    body: JSON.stringify({ model: MODELS[tier] || MODELS.default, max_tokens: 16000, messages: [{ role: 'user', content }] })
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) return res.status(502).json({ error: j.error || { message: 'Claude request failed' } });
-  res.status(200).json({ text: (j.content || []).map(c => c.text || '').join('') });
+  const text = (j.content || []).map(c => c.text || '').join('');
+  if (!text) return res.status(502).json({ error: { message: `Claude returned no text (stop reason: ${j.stop_reason || 'unknown'})` } });
+  res.status(200).json({ text, stop_reason: j.stop_reason });
 }
