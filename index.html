@@ -150,6 +150,8 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
 .zoombar .chip{min-width:44px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font:500 12.5px var(--mono);color:var(--muted);cursor:pointer}
 .zoombar .chip.on{color:#0a1416;background:var(--ice);border-color:var(--ice)}
 .phone.live{touch-action:none}
+.micmeter{display:inline-block;width:60px;height:8px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.micmeter i{display:block;height:100%;width:0;background:var(--good);transition:width .1s linear}
 .rec{position:absolute;top:10px;right:10px;background:rgba(234,111,95,.92);color:#fff;font:600 11px var(--mono);letter-spacing:.1em;border-radius:999px;padding:4px 9px}
 .prompter{position:absolute;left:8px;right:8px;top:8px;background:rgba(10,20,22,.72);color:#fff;font-family:var(--serif);font-size:20px;line-height:1.2;padding:8px 10px;border-radius:12px;text-align:center}
 .count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:120px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.5);pointer-events:none}
@@ -334,8 +336,12 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
           <button class="btn hidden" id="bNext">Next shot</button>
         </div>
         <div class="zoombar hidden" id="zoomBar">
+          <span style="display:flex;gap:6px;width:100%;justify-content:center;flex-wrap:wrap;align-items:center">
+            <select id="lensSel" aria-label="Camera" class="hidden"></select>
+            <select id="micSel" aria-label="Microphone" class="hidden"></select>
+            <span class="micmeter" title="Microphone level"><i id="micLvl"></i></span>
+          </span>
           <span id="orientSeg" style="display:flex;gap:6px"><button class="chip" data-o="portrait">Portrait</button><button class="chip" data-o="landscape">Landscape</button></span>
-          <select id="lensSel" aria-label="Camera lens" class="hidden"></select>
           <span id="zChips" style="display:flex;gap:6px"></span>
           <input type="range" id="zoomR" min="1" max="4" step="0.1" value="1" aria-label="Zoom">
           <span class="mono" id="zoomV" style="min-width:42px">1.0x</span>
@@ -1149,7 +1155,7 @@ Question: ${q}`, { modelTier: 'default' });
 };
 
 /* ---------------- Live camera ---------------- */
-S.live = { on: false, facing: 'user', orient: (() => { try { return localStorage.getItem('sd-orient') || 'portrait'; } catch (e) { return 'portrait'; } })(), deviceId: (() => { try { return localStorage.getItem('sd-lens'); } catch (e) { return null; } })() };
+S.live = { on: false, facing: 'user', micId: (() => { try { return localStorage.getItem('sd-mic'); } catch (e) { return null; } })(), orient: (() => { try { return localStorage.getItem('sd-orient') || 'portrait'; } catch (e) { return 'portrait'; } })(), deviceId: (() => { try { return localStorage.getItem('sd-lens'); } catch (e) { return null; } })() };
 const lc = document.createElement('canvas'); const lctx = lc.getContext('2d', { willReadFrequently: true });
 function grayFrom(cnv) {
   sc.width = 64; sc.height = Math.max(8, Math.round(64 * cnv.height / cnv.width));
@@ -1168,8 +1174,13 @@ async function startLive() {
     const portrait = S.live.orient !== 'landscape';
     const vc = { width: { ideal: portrait ? 1080 : 1920 }, height: { ideal: portrait ? 1920 : 1080 }, aspectRatio: { ideal: portrait ? 9 / 16 : 16 / 9 }, zoom: true };
     if (S.live.deviceId) vc.deviceId = { exact: S.live.deviceId }; else vc.facingMode = S.live.facing;
-    try { stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
-    catch (e1) { delete vc.zoom; if (e1 && e1.name === 'OverconstrainedError') { delete vc.deviceId; vc.facingMode = S.live.facing; S.live.deviceId = null; } stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
+    let ac = S.live.micId ? { deviceId: { exact: S.live.micId } } : true;
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: ac }); }
+    catch (e1) {
+      delete vc.zoom;
+      if (e1 && e1.name === 'OverconstrainedError') { delete vc.deviceId; vc.facingMode = S.live.facing; S.live.deviceId = null; ac = true; S.live.micId = null; }
+      stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: ac });
+    }
   } catch (e) { return liveBlocked(e); }
   if (synth) synth.speak(new SpeechSynthesisUtterance(' '));
   let analyser = null;
@@ -1202,13 +1213,21 @@ async function setupZoom() {
   $('#zChips').querySelectorAll('button').forEach(b => b.onclick = () => setZoom(+b.dataset.z));
   // lenses (after permission the labels are readable: Back Ultra Wide Camera, Back Camera, Front Camera...)
   try {
-    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const all = await navigator.mediaDevices.enumerateDevices();
+    const cams = all.filter(d => d.kind === 'videoinput'), mics = all.filter(d => d.kind === 'audioinput' && d.deviceId !== 'communications');
+    const curMic = (S.live.stream.getAudioTracks()[0] || { getSettings: () => ({}) }).getSettings().deviceId;
+    const ms = $('#micSel');
+    if (mics.length > 1) {
+      ms.innerHTML = mics.map((c, i) => `<option value="${esc(c.deviceId)}" ${c.deviceId === curMic ? 'selected' : ''}>Mic: ${esc((c.label || 'Microphone ' + (i + 1)).replace(/^Default - /, ''))}</option>`).join('');
+      ms.classList.remove('hidden');
+      ms.onchange = async () => { S.live.micId = ms.value; try { localStorage.setItem('sd-mic', ms.value); } catch (e) {} if (S.live.state !== 'recording') { await stopLive(true); startLive(); } };
+    } else ms.classList.add('hidden');
     const cur = track.getSettings().deviceId;
     const sel = $('#lensSel');
     if (cams.length > 1) {
-      sel.innerHTML = cams.map((c, i) => `<option value="${esc(c.deviceId)}" ${c.deviceId === cur ? 'selected' : ''}>${esc(c.label || 'Camera ' + (i + 1))}</option>`).join('');
+      sel.innerHTML = cams.map((c, i) => `<option value="${esc(c.deviceId)}" ${c.deviceId === cur ? 'selected' : ''}>Camera: ${esc(c.label || 'Camera ' + (i + 1))}</option>`).join('');
       sel.classList.remove('hidden');
-      sel.onchange = async () => { S.live.deviceId = sel.value; try { localStorage.setItem('sd-lens', sel.value); } catch (e) {} await stopLive(true); startLive(); };
+      sel.onchange = async () => { if (S.live.state === 'recording') return; S.live.deviceId = sel.value; try { localStorage.setItem('sd-lens', sel.value); } catch (e) {} await stopLive(true); startLive(); };
     } else sel.classList.add('hidden');
   } catch (e) {}
   $('#zoomBar').classList.remove('hidden');
@@ -1333,6 +1352,7 @@ async function liveLoop() {
   const all = regionStats(d, lc.width, 0, 0, lc.width, lc.height);
   const fs = face ? regionStats(d, lc.width, (face.x + face.w * .15) * lc.width, (face.y + face.h * .1) * lc.height, (face.x + face.w * .85) * lc.width, (face.y + face.h * .9) * lc.height) : null;
   const m = { face, body, all, fs, shake: median(S.live.shakes) || 0, level: liveAudioLevel() };
+  { const el = $('#micLvl'); if (el) { el.style.width = Math.min(100, Math.round(m.level * 500)) + '%'; el.style.background = m.level > .3 ? 'var(--bad)' : 'var(--good)'; } }
   const s = shot();
   const a = liveAssess(s, m);
   const Zs = S.live.zoom;
