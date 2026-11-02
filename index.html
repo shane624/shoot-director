@@ -142,7 +142,7 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
 .tabs button.on{background:var(--panel2);color:var(--ink)}
 .askrow{display:flex;gap:8px;margin-top:14px;width:min(440px,100%)}
 .askrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
-.phone.live video{transform:var(--vt,none);transform-origin:50% 50%}
+.phone.live video{transform:var(--vt,none);transform-origin:50% 50%;object-fit:contain}
 .phone.live canvas{transform:var(--mir,none)}
 .zoombar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
 .zoombar select{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12.5px;max-width:190px}
@@ -313,6 +313,7 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
           <span id="zChips" style="display:flex;gap:6px"></span>
           <input type="range" id="zoomR" min="1" max="4" step="0.1" value="1" aria-label="Zoom">
           <span class="mono" id="zoomV" style="min-width:42px">1.0x</span>
+          <span class="mono muted" id="camInfo" style="font-size:11px;width:100%;text-align:center"></span>
         </div>
         <input type="file" id="fTake" accept="video/*" class="hidden">
         <label class="row muted" style="justify-content:center;font-size:12.5px;margin-top:8px;gap:6px;cursor:pointer"><input type="checkbox" id="autoRec" checked> Live: start recording by itself once the frame is right</label>
@@ -655,7 +656,7 @@ function goTo(i, say = true) {
 }
 function hintFor(s) { return FRAMING_HINT[s.framing] + (s.textRoom ? ' Leave room above your head for text.' : '') + ` ${s.minLen}s or longer.`; }
 function resetCard() {
-  const ph = $('#phone');
+  const ph = $('#phone'); ph.style.aspectRatio = ''; ph.style.width = '';
   ph.className = 'phone drop';
   ph.innerHTML = `<div><div class="up">↑</div><div class="big">Drop your take</div><div class="mono muted" style="margin-top:8px">SHOT ${S.idx + 1} · ${esc(shot().title)}</div><div class="hint">${esc(hintFor(shot()))}</div></div>`;
   $('#checks').innerHTML = '';
@@ -742,7 +743,7 @@ async function handleTake(file, hint = {}) {
 
 function showTake(t) {
   const s = S.plan.shots.find(x => x.id === t.shotId);
-  const ph = $('#phone');
+  const ph = $('#phone'); ph.style.aspectRatio = ''; ph.style.width = '';
   if (!ph.querySelector('video') || ph.querySelector('video').src !== t.url) {
     ph.className = 'phone';
     ph.innerHTML = `<video muted playsinline loop autoplay src="${t.url}"></video><canvas></canvas><div class="verdict"></div>`;
@@ -1137,7 +1138,8 @@ async function startLive() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return liveBlocked();
   let stream;
   try {
-    const vc = { width: { ideal: 1080 }, height: { ideal: 1920 }, zoom: true };
+    const portrait = window.innerHeight > window.innerWidth;
+    const vc = { width: { ideal: portrait ? 1080 : 1920 }, height: { ideal: portrait ? 1920 : 1080 }, aspectRatio: { ideal: portrait ? 9 / 16 : 16 / 9 }, zoom: true };
     if (S.live.deviceId) vc.deviceId = { exact: S.live.deviceId }; else vc.facingMode = S.live.facing;
     try { stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
     catch (e1) { delete vc.zoom; if (e1 && e1.name === 'OverconstrainedError') { delete vc.deviceId; vc.facingMode = S.live.facing; S.live.deviceId = null; } stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
@@ -1235,6 +1237,15 @@ function mountLive() {
     <div class="rec hidden" id="recDot">REC <span id="recT">0.0</span></div><div class="count hidden" id="countN"></div>
     <div class="verdict wait"><span id="liveMsg">framing</span><small id="liveTag">LIVE</small></div>`;
   const v = ph.querySelector('video'); v.srcObject = S.live.stream; v.play().catch(() => {});
+  const fit = () => {
+    if (!v.videoWidth) return;
+    const ar = v.videoWidth / v.videoHeight;
+    ph.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+    ph.style.width = ar > 1 ? 'min(440px, 92vw)' : ar > .7 ? 'min(320px, 80vw)' : '';
+    const Z = S.live.zoom;
+    $('#camInfo').textContent = `Camera sends ${v.videoWidth}×${v.videoHeight}${ar > 1 ? ' (landscape)' : ''} · zoom ${Z ? (Z.mode === 'hw' ? 'lens' : 'digital') : ''}`;
+  };
+  v.addEventListener('loadedmetadata', fit); v.addEventListener('resize', fit); fit();
   applyDigital();
   S.live.state = 'framing'; S.live.okSince = null; S.live.prevG = null; S.live.shakes = [];
   // give him time to hear the direction and get into place before cues or auto-record
