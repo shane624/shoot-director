@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shoot Director</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1416;--panel:#11201f;--panel2:#162a2b;--line:#23393a;
+  --ink:#e8efea;--muted:#88a19d;--ice:#9fd3d6;--gold:#c9a86a;--good:#7fd1a8;--warn:#e3a76b;--bad:#ea6f5f;
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;--serif:"Cormorant Garamond",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "DM Sans",system-ui,sans-serif;min-height:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+.mono{font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;font-size:11.5px}
+.muted{color:var(--muted)}
+.hidden{display:none !important}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer;font-size:14px}
+.btn:hover{border-color:var(--ice)}
+.btn.primary{background:var(--ice);border-color:var(--ice);color:#0a1416;font-weight:600}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px 14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand b{font-family:var(--mono);font-weight:500;letter-spacing:.12em;font-size:13px}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{display:flex;gap:7px;align-items:center}
+.dots i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--muted);display:block}
+.dots i.done{background:var(--good);border-color:var(--good)}
+.dots i.now{border-color:var(--ice);box-shadow:0 0 0 3px rgba(159,211,214,.25)}
+.clock{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.clock::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--bad)}
+
+/* plan */
+.plan h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.05;margin:10px 0 6px}
+.plan p.lede{color:var(--muted);max-width:640px;margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.form{display:grid;gap:14px}
+.form label{display:grid;gap:6px}
+.form textarea,.form input,.form select{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.form textarea{min-height:90px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){.grid3,.grid2{grid-template-columns:1fr}}
+.shotlist{display:grid;gap:10px;margin-top:14px}
+.sl-act{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:12px 0 0}
+.sl{display:grid;grid-template-columns:34px 1fr;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.sl .n{font-family:var(--serif);font-size:28px;color:var(--gold);line-height:1}
+.sl .t{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.sl .d{font-family:var(--serif);font-size:20px;line-height:1.25;margin:4px 0 6px;outline:none;border-radius:6px}
+.sl .d:focus{background:rgba(159,211,214,.06)}
+.sl .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sl select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 6px;font-size:12.5px}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)}
+.status{font-size:13px;color:var(--muted);min-height:1.4em}
+
+/* shoot */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:center;min-height:62vh}
+@media(max-width:860px){.stage{grid-template-columns:1fr;min-height:0}}
+.director{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 6px}
+.orbwrap{position:relative;width:min(240px,52vw);aspect-ratio:1;display:grid;place-items:center}
+.orbwrap::before,.orbwrap::after{content:"";position:absolute;inset:4%;border-radius:50%;border:1px solid rgba(232,239,234,.12)}
+.orbwrap::after{inset:-3%;border-color:rgba(232,239,234,.06)}
+.orb{--core:#cfeef0;--mid:#4f9fb4;--edge:#2a4a66;width:62%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 50% 48%,var(--core) 0 28%,var(--mid) 52%,var(--edge) 66%,transparent 72%);
+  filter:blur(3px) saturate(1.1);animation:breathe 4.5s ease-in-out infinite;transition:--core .4s}
+.orb.speak{animation:talk .55s ease-in-out infinite alternate}
+.orb.check{--core:#8fd3ff;--mid:#ff4f8f;--edge:#5a2250;animation:spin 1.6s linear infinite}
+.orb.pass{--core:#e3fff0;--mid:#5fcf9a;--edge:#245c4a}
+.orb.fail{--core:#ffd6cc;--mid:#ea6f5f;--edge:#5c2a2a}
+.ring{position:absolute;inset:-8%;border-radius:50%;border:1px solid rgba(255,79,143,.35);opacity:0}
+.check ~ .ring{opacity:1;animation:ripple 1.6s ease-out infinite}
+@keyframes breathe{50%{transform:scale(1.06)}}
+@keyframes talk{from{transform:scale(1)}to{transform:scale(1.12)}}
+@keyframes spin{to{transform:rotate(360deg) scale(1.04)}}
+@keyframes ripple{from{transform:scale(.8);opacity:.8}to{transform:scale(1.15);opacity:0}}
+@media (prefers-reduced-motion:reduce){.orb,.ring{animation:none !important}}
+.dstate{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:var(--muted);margin-top:16px}
+.dline{font-family:var(--serif);font-size:clamp(24px,3.2vw,36px);line-height:1.15;margin:8px 0 0;max-width:30ch;min-height:2.4em}
+.dline .dim{opacity:.55}
+.dctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+
+.take{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap}
+.phone{position:relative;width:min(250px,64vw);aspect-ratio:9/16;border-radius:22px;overflow:hidden;background:#0d1b1d;border:1px solid var(--line);flex:none}
+.phone.drop{border:1.5px dashed #4a6366;display:grid;place-items:center;text-align:center;cursor:pointer;padding:16px}
+.phone.drop.over{border-color:var(--ice)}
+.phone.drop .up{width:54px;height:54px;border-radius:50%;border:1.5px solid var(--ice);display:grid;place-items:center;margin:0 auto 12px;color:var(--ice);font-size:22px}
+.phone.drop .big{font-family:var(--serif);font-size:24px}
+.phone.drop .hint{font-size:12.5px;color:var(--muted);margin-top:10px}
+.phone video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.phone canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.verdict{position:absolute;left:10px;right:10px;bottom:10px;border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-family:var(--serif);font-size:22px;color:#0a1416}
+.verdict small{font-family:var(--mono);font-size:10px;letter-spacing:.14em;opacity:.7}
+.verdict.ok{background:rgba(127,209,168,.92)}
+.verdict.no{background:rgba(234,111,95,.93)}
+.verdict.wait{background:rgba(159,211,214,.85)}
+.checks{width:min(260px,100%);font-size:13.5px}
+.checks h4{font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 6px}
+.ck{border-top:1px solid var(--line);padding:7px 0}
+.ck .r{display:flex;justify-content:space-between;gap:10px}
+.ck .v{font-family:var(--mono);font-size:12px}
+.ck.ok .v{color:var(--good)}
+.ck.warn .v{color:var(--warn)}
+.ck.fail .v{color:var(--bad)}
+.ck .note{font-family:var(--mono);font-size:10.5px;color:var(--bad);margin-top:2px;text-transform:none;letter-spacing:0}
+.ck.warn .note{color:var(--warn)}
+.ck.neutral .v{color:var(--muted)}
+.takectl{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+.rails{display:grid;grid-template-columns:repeat(var(--acts,3),minmax(0,1fr));gap:10px;margin-top:20px}
+@media(max-width:700px){.rails{grid-template-columns:1fr}}
+.rail{border:1px solid var(--line);border-radius:999px;padding:7px 10px 7px 16px;display:flex;align-items:center;gap:10px;background:var(--panel)}
+.rail .nm{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.rail .slots{display:flex;gap:5px;flex:1}
+.rail .slot{width:26px;height:36px;border-radius:6px;border:1px solid var(--line);overflow:hidden;background:var(--panel2);cursor:pointer;padding:0}
+.rail .slot img{width:100%;height:100%;object-fit:cover;display:block}
+.rail .slot.now{border-color:var(--ice)}
+.rail .ct{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.loading{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+
+/* done */
+.done h1{font-family:var(--serif);font-size:42px;margin:12px 0 4px;font-weight:600}
+.files{display:grid;gap:8px;margin-top:14px}
+.file{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;background:var(--panel2);border-radius:10px;padding:8px}
+.file img{width:44px;height:60px;object-fit:cover;border-radius:6px;background:#000}
+.file .fn{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.progress{height:4px;border-radius:2px;background:var(--panel2);overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;width:0;background:var(--ice)}
+textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;font:12.5px/1.45 var(--mono);color:var(--ink);margin-top:10px}
+.no-ai .ai-only{display:none !important}
+.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{background:transparent;border:0;border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--muted);cursor:pointer;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.tabs button.on{background:var(--panel2);color:var(--ink)}
+.askrow{display:flex;gap:8px;margin-top:14px;width:min(440px,100%)}
+.askrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
+.phone.live video{transform:var(--mir,none)}
+.phone.live canvas{transform:var(--mir,none)}
+.rec{position:absolute;top:10px;right:10px;background:rgba(234,111,95,.92);color:#fff;font:600 11px var(--mono);letter-spacing:.1em;border-radius:999px;padding:4px 9px}
+.prompter{position:absolute;left:8px;right:8px;top:8px;background:rgba(10,20,22,.72);color:#fff;font-family:var(--serif);font-size:20px;line-height:1.2;padding:8px 10px;border-radius:12px;text-align:center}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:120px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.5);pointer-events:none}
+.beat{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.beat .tm{font-family:var(--mono);font-size:12px;color:var(--gold)}
+.beat .say{font-family:var(--serif);font-size:21px;line-height:1.25;outline:none}
+.beat .meta{font-size:12.5px;color:var(--muted);margin-top:4px}
+.beat .warn{font-size:12px;color:var(--warn)}
+.hook{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer}
+.hook.on{border-color:var(--gold);background:rgba(201,168,106,.06)}
+.hook .say{font-family:var(--serif);font-size:20px;line-height:1.2}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ice);color:#0a1416;border-radius:999px;padding:8px 14px;font-weight:600;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><b>SHOOT DIRECTOR</b><span class="pill" id="planPill">Plan</span></div>
+    <nav class="tabs" id="tabs"><button data-v="script">Script</button><button data-v="plan" class="on">Plan</button><button data-v="shoot" disabled>Shoot</button></nav>
+    <div class="dots" id="dots"></div>
+    <div class="clock hidden" id="clock">00:00</div>
+  </div>
+
+  <!-- SCRIPT -->
+  <section id="vScript" class="plan hidden">
+    <h1>Write it the way you talk.</h1>
+    <p class="lede">Give me the story. I'll write a script built to hold attention: a hook in the first two seconds, stakes, a visual change every few seconds, an open loop, the payoff and your call to action. It's written in your speaking voice and timed to your pace.</p>
+    <div class="grid2" style="align-items:start">
+      <div class="card form">
+        <label><span class="mono muted">The story</span>
+          <textarea id="scStory" style="min-height:140px" placeholder="E.g. The 16,000 counts of développé a dancer loses by putting the leg down one count early. Why holding it to the end matters, and the test to check yourself."></textarea></label>
+        <div class="grid2">
+          <label><span class="mono muted">Length</span><select id="scLen"><option value="15">15 seconds</option><option value="30" selected>30 seconds</option><option value="45">45 seconds</option><option value="60">60 seconds</option><option value="90">90 seconds</option></select></label>
+          <label><span class="mono muted">Format</span><select id="scFormat"><option value="mixed" selected>Talking plus b-roll</option><option value="talk">Talking to camera</option><option value="vo">Voiceover over b-roll</option></select></label>
+        </div>
+        <div class="grid2">
+          <label><span class="mono muted">Content type</span><select id="scType"><option value="ballet">Ballet technique</option><option value="move">Move / Perform / Longevity</option><option value="community">Inside the community</option><option value="story">Philosophy and story</option></select></label>
+          <label><span class="mono muted">Call to action (optional)</span><input id="scCta" placeholder="Comment HOLD and I'll send you the test"></label>
+        </div>
+        <div class="row"><button class="btn primary" id="bWrite">Write my script</button></div>
+        <div class="status" id="scStatus"></div>
+      </div>
+      <div class="card form">
+        <span class="mono">Your voice</span>
+        <p class="muted" style="margin:0;font-size:13.5px" id="voiceState"></p>
+        <details><summary class="muted" style="cursor:pointer;font-size:13.5px">See and edit the voice profile</summary>
+          <textarea id="vpView" style="min-height:260px;font:12.5px/1.5 var(--mono);margin-top:8px"></textarea>
+          <label class="row" style="gap:8px;margin-top:8px"><span class="mono muted">Pace, words a minute</span><input id="vpWps" type="number" min="100" max="220" style="width:90px"></label>
+          <div class="row" style="margin-top:8px"><button class="btn" id="bVoiceCopy">Copy profile</button><button class="btn ghost" id="bVoiceReset">Reset to workshop profile</button></div>
+        </details>
+        <label><span class="mono muted">Teach it more of your voice</span>
+          <textarea id="vtPaste" placeholder="Paste a transcript: a talk, a workshop, a podcast episode, a voice note."></textarea></label>
+        <input type="file" id="vtFiles" multiple accept=".txt,.vtt,.srt,.md,text/plain">
+        <div class="row"><button class="btn" id="bLearn">Learn my voice</button></div>
+        <p class="muted" style="margin:0;font-size:12.5px">Subtitle files (.vtt or .srt) also set your speaking pace, so script timings match how fast you actually talk.</p>
+      </div>
+    </div>
+    <div id="scriptOut" class="card hidden" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between"><h2 style="font-family:var(--serif);font-size:30px;margin:0" id="scTitle"></h2>
+        <div class="row"><button class="btn primary" id="bScShoot">Turn into a shoot</button><button class="btn" id="bScRead">Read it aloud</button><button class="btn" id="bScCopy">Copy</button></div></div>
+      <p class="muted" style="font-size:13.5px;margin:6px 0 0" id="scStats"></p>
+      <div class="mono muted" style="margin-top:16px">Pick your hook</div>
+      <div id="scHooks"></div>
+      <div class="mono muted" style="margin-top:18px">Script · tap a line to edit it</div>
+      <div id="scBeats"></div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="bScTighter">Tighter</button><button class="btn" id="bScWarmer">More like me</button></div>
+      <p style="font-size:13.5px;margin-top:14px"><span class="mono muted">Why it holds</span><br><span id="scWhy"></span></p>
+      <p style="font-size:13.5px"><span class="mono muted">Caption</span><br><span id="scCaption"></span></p>
+      <textarea class="copy hidden" id="scCopyBox" readonly></textarea>
+    </div>
+  </section>
+
+  <!-- PLAN -->
+  <section id="vPlan" class="plan">
+    <h1>Tell me the story.<br>I'll tell you what to film.</h1>
+    <p class="lede">Put the phone on a stand, film each shot as it's called, and drop the take in. Every take is checked for framing, headroom, feet, light, steadiness, length and whether it shows what was asked. Redo it until it passes. At the end your clips come back named and in story order.</p>
+    <div class="card form">
+      <label><span class="mono muted">What's the video about</span>
+        <textarea id="fStory" placeholder="Audition season. The 6am barre nobody sees, the email that says no, and the callback that says yes."></textarea></label>
+      <div class="grid2">
+        <label><span class="mono muted">Where are you filming</span><input id="fWhere" placeholder="Home studio, kitchen, car park"></label>
+        <label><span class="mono muted">Content type</span>
+          <select id="fType">
+            <option value="ballet">Ballet technique</option>
+            <option value="move">Move / Perform / Longevity</option>
+            <option value="community">Inside the community</option>
+            <option value="story" selected>Philosophy and story</option>
+          </select></label>
+      </div>
+      <div class="grid3">
+        <label><span class="mono muted">Act one</span><input id="fA0" value="Struggle"></label>
+        <label><span class="mono muted">Act two</span><input id="fA1" value="Grind"></label>
+        <label><span class="mono muted">Act three</span><input id="fA2" value="Win"></label>
+      </div>
+      <div class="row">
+        <label class="row" style="gap:8px"><span class="mono muted">Shots per act</span>
+          <select id="fPer" style="width:auto"><option>2</option><option selected>3</option><option>4</option></select></label>
+        <label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="fYap" checked style="width:auto"> <span>Include talking-to-camera shots with hook lines</span></label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="bPlan">Plan my shots</button>
+        <button class="btn" id="bSample">Use the sample shoot</button>
+        <button class="btn ghost hidden" id="bResume">Resume last plan</button>
+      </div>
+      <div class="status" id="planStatus"></div>
+    </div>
+
+    <details class="card" style="margin-top:14px" id="playbook"><summary style="cursor:pointer"><span class="mono">The playbook</span> <span class="muted" style="font-size:13px">· what every shot is planned and checked against</span></summary><div id="pbBody" style="margin-top:10px"></div></details>
+
+    <div id="planOut" class="hidden">
+      <div class="row" style="justify-content:space-between;margin-top:22px">
+        <h2 style="font-family:var(--serif);font-size:28px;margin:0" id="planTitle">Shot list</h2>
+        <button class="btn primary" id="bStart">Start the shoot</button>
+      </div>
+      <p class="muted" style="margin:4px 0 0;font-size:13.5px">Tap a direction to rewrite it. Framing decides what gets checked: close and medium shots check headroom, full shots check your feet, detail shots skip the face.</p>
+      <div class="shotlist" id="shotlist"></div>
+    </div>
+  </section>
+
+  <!-- SHOOT -->
+  <section id="vShoot" class="hidden">
+    <div class="stage">
+      <div class="director">
+        <div class="orbwrap"><div class="orb" id="orb"></div><div class="ring"></div></div>
+        <div class="dstate" id="dstate">DIRECTOR</div>
+        <p class="dline" id="dline"></p>
+        <p class="mono muted" id="dcraft" style="max-width:46ch;text-transform:none;letter-spacing:.02em;font-size:12px;margin:12px 0 0"></p>
+        <div class="dctl">
+          <button class="btn" id="bSay">Say it again</button>
+          <button class="btn ghost" id="bVoice">Voice on</button>
+          <button class="btn ghost" id="bPrev">Back</button>
+          <button class="btn ghost" id="bSkip">Skip shot</button>
+          <button class="btn ghost" id="bWrap">Wrap</button>
+        </div>
+        <form class="askrow ai-only" id="askForm"><input id="askIn" placeholder="Ask the director anything about this shot"><button class="btn">Ask</button></form>
+        <div class="loading" id="eyeStatus">Loading the camera eye…</div>
+      </div>
+      <div>
+        <div class="take">
+          <div id="phone" class="phone drop">
+            <div>
+              <div class="up">↑</div>
+              <div class="big">Drop your take</div>
+              <div class="mono muted" style="margin-top:8px" id="dropShot">SHOT 1</div>
+              <div class="hint" id="dropHint"></div>
+            </div>
+          </div>
+          <div class="checks" id="checks"></div>
+        </div>
+        <div class="takectl" style="justify-content:center">
+          <button class="btn primary" id="bLive">Go live</button>
+          <button class="btn hidden" id="bFlip">Flip camera</button>
+          <button class="btn hidden" id="bRec">Record now</button>
+          <button class="btn" id="bPick">Add take</button>
+          <button class="btn hidden" id="bKeep">Keep it anyway</button>
+          <button class="btn hidden" id="bNext">Next shot</button>
+        </div>
+        <input type="file" id="fTake" accept="video/*" class="hidden">
+        <label class="row muted" style="justify-content:center;font-size:12.5px;margin-top:8px;gap:6px;cursor:pointer"><input type="checkbox" id="autoRec" checked> Live: start recording by itself once the frame is right</label>
+      </div>
+    </div>
+    <div class="rails" id="rails"></div>
+  </section>
+
+  <!-- DONE -->
+  <section id="vDone" class="hidden done">
+    <span class="mono muted">Wrap</span>
+    <h1>Done. Everything's organised.</h1>
+    <p class="muted" id="doneSummary"></p>
+    <div class="row">
+      <button class="btn primary" id="bZip">Download all footage (.zip)</button>
+      <button class="btn" id="bCopy">Copy shot list</button>
+      <button class="btn ghost" id="bBackToShoot">Back to the shoot</button>
+      <button class="btn ghost" id="bNew">New shoot</button>
+    </div>
+    <div class="progress hidden" id="zipProg"><i></i></div>
+    <div class="status" id="zipStatus"></div>
+    <textarea class="copy hidden" id="copyBox" readonly></textarea>
+    <div class="files" id="files"></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const median = a => { const b = a.filter(v => v != null && !isNaN(v)).sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : null; };
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); };
+const ACT_C = ['#ea8f7f', '#c9a86a', '#7fd1a8', '#9fd3d6'];
+
+const PLAYBOOK = [
+  { h: 'Hook and first frame', items: [
+    'Open in motion or mid-sentence. The first frame already shows the person, the place and the problem.',
+    'Spoken hooks run 15 words or fewer and state the value or tension, never a self-introduction.',
+    'On-screen text stays under 10 words, readable in about a second and a half, inside the safe zone.',
+    'Bank two or three takes of the hook; it is the shot most worth getting right.' ] },
+  { h: 'Talking to camera', items: [
+    'Lens at eye level. Look into the lens, not at your face on the screen.',
+    'Frame chest up with eyes on the upper third line and a little room above the head.',
+    'Start talking the moment you hit record; pauses get cut, so leave none at the start.',
+    'Give a touch more energy than feels natural; the camera flattens it.',
+    'Face the light: a window at roughly 45 degrees, face brighter than the background.' ] },
+  { h: 'Shot language', items: [
+    'The wide tells where, the medium tells who, the tight tells what.',
+    'Sequence a moment as hands, face, wide, over the shoulder, then an unusual angle.',
+    'Phone screens favour close shots; use far more tight shots than wides.',
+    'Vary shot size between consecutive shots so cuts feel intentional, not jumpy.' ] },
+  { h: 'Composition', items: [
+    'Put the subject on a thirds line; leave space on the side they face or move towards.',
+    'Keep the background clean with some depth; move clutter or step away from the wall.',
+    'Use foreground (a barre, a doorway, a shoulder) to add depth.',
+    'Do not crop at joints: not at the ankles, knees, wrists or neck.' ] },
+  { h: 'Cinematic craft', items: [
+    'Hold still for a beat before and after the action so the editor has clean cut points.',
+    'Enter and exit frame; walking in or out gives a natural cut.',
+    'Low angles give power and scale; high angles make the subject feel small or alone.',
+    'Match on action: repeat a movement from a second angle so it can be cut mid-move.',
+    'Lock the camera off unless the movement has a reason, then keep it slow and steady.' ] },
+  { h: 'Dance on camera', items: [
+    'Full body for any step: head to feet with floor visible below the feet.',
+    'Camera around hip height for dance lines; eye level shortens the legs.',
+    'Side-on shows line and placement, front-on shows turnout and symmetry.',
+    'Leave travel room in the direction of movement so the dancer never leaves frame.' ] },
+  { h: 'Pacing and retention', items: [
+    'Reels run best at 7 to 30 seconds; a cut or visual change every 1.5 to 3 seconds.',
+    'Change the type of pattern interrupt: new size, new angle, text, a sound.',
+    'Most viewers watch muted, so every talking shot needs captions.',
+    'End on a payoff or a loop back to the opening frame.' ] }
+];
+const PLAYBOOK_TEXT = PLAYBOOK.map(sec => sec.h.toUpperCase() + '\n' + sec.items.map(i => '- ' + i).join('\n')).join('\n');
+const STRATEGY = {
+  ballet: 'Ballet technique content: name a problem dancers face and their fear or desire around it, include a moment that works as a self-test. Do not show the correction itself; the payoff points to The Athletistry Project community on Skool.',
+  move: 'Move, Perform or Longevity content: show the practice clearly and give it away; the payoff points to the system and sequence.',
+  community: 'Inside-the-community content: show what changes in dancers\' lives as outcomes, never as features.',
+  story: 'Philosophy and story content: one belief, shown through concrete physical moments rather than told.'
+};
+const FRAMING_HINT = {
+  close: 'Close: head and shoulders.',
+  medium: 'Medium: head to waist.',
+  full: 'Full body: head to feet, floor visible.',
+  detail: 'Detail: hands, feet or an object. No face needed.',
+  talk: 'Talking: chest up, lens at eye level, eyes on the top third.'
+};
+
+const S = {
+  plan: null, idx: 0, takes: {}, saved: {}, current: null, voice: true, t0: null, timer: null,
+  claude: null, downloads: null
+};
+
+/* ---------------- AI (Claude in claude.ai, or your own /api/claude when self-hosted) ---------------- */
+S.api = false;
+const aiReady = (async () => {
+  try { S.claude = window.claude ? await window.claude.use('sample') : null; } catch (e) { S.claude = null; }
+  try { S.downloads = window.claude ? await window.claude.use('downloads') : null; } catch (e) { S.downloads = null; }
+  if (!S.claude && location.protocol.startsWith('http')) {
+    try { const r = await fetch('api/claude', { method: 'GET' }); if (r.ok) { const j = await r.json(); S.api = !!j.ok; S.apiLocked = !!j.passcode; } } catch (e) {}
+  }
+  const on = aiOn();
+  document.body.classList.toggle('no-ai', !on);
+  if (!on) { $('#bPlan').textContent = 'Plan my shots (needs Claude)'; $('#bPlan').disabled = true; }
+  return on;
+})();
+const aiOn = () => !!(S.claude || S.api);
+let imgCap = null;
+async function imagesOK() {
+  if (imgCap != null) return imgCap;
+  if (S.api) return imgCap = true;
+  try { const l = await S.claude.limits(); imgCap = !!l.images; } catch (e) { imgCap = false; }
+  return imgCap;
+}
+const toB64 = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(b); });
+async function aiText(prompt, opts = {}) {
+  if (S.claude) { const r = await S.claude(prompt, opts); return r.text || ''; }
+  if (S.api) {
+    let pass = ''; try { pass = localStorage.getItem('sd-pass') || ''; } catch (e) {}
+    if (S.apiLocked && !pass) { pass = await askPasscode(); }
+    const images = opts.images ? await Promise.all(opts.images.map(toB64)) : [];
+    const r = await fetch('api/claude', { method: 'POST', headers: { 'content-type': 'application/json', 'x-passcode': pass }, body: JSON.stringify({ prompt, images, tier: opts.modelTier || 'default' }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { try { localStorage.removeItem('sd-pass'); } catch (e) {} throw { code: 'not_granted', message: 'Wrong passcode' }; }
+    if (!r.ok) throw { code: 'error', message: (j.error && j.error.message) || 'AI request failed' };
+    return j.text || '';
+  }
+  throw { code: 'not_granted', message: 'No AI available' };
+}
+function askPasscode() {
+  return new Promise(res => {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:20';
+    d.innerHTML = '<form class="card" style="width:min(340px,90vw);display:grid;gap:10px"><b>Passcode</b><input type="password" style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px" autofocus><button class="btn primary">Unlock</button></form>';
+    document.body.appendChild(d);
+    d.querySelector('form').onsubmit = e => { e.preventDefault(); const v = d.querySelector('input').value; try { localStorage.setItem('sd-pass', v); } catch (er) {} d.remove(); res(v); };
+  });
+}
+const cleanCopy = t => String(t || '').replace(/[—–]/g, ',').replace(/!/g, '.').replace(/\btransform(s|ed|ing|ation|ative)?\b/gi, m => ({ transform: 'change', transforms: 'changes', transformed: 'changed', transforming: 'changing', transformation: 'change', transformative: 'game-changing' }[m.toLowerCase()] || 'change'));
+async function ask(prompt, opts = {}) {
+  const t = await aiText(prompt, opts);
+  return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+}
+
+/* ---------------- Vision models ---------------- */
+let human = null;
+const eye = (async () => {
+  try {
+    const { default: Human } = await import('./lib/human.esm.js');
+    const h = new Human({
+      modelBasePath: new URL('./models/', location.href).href, debug: false, cacheSensitivity: 0,
+      face: { enabled: true, detector: { modelPath: 'blazeface.json', rotation: false, maxDetected: 1, minConfidence: 0.35, return: false }, mesh: { enabled: false }, iris: { enabled: false }, description: { enabled: false }, emotion: { enabled: false }, antispoof: { enabled: false }, liveness: { enabled: false }, attention: { enabled: false } },
+      body: { enabled: true, modelPath: 'movenet-lightning.json', maxDetected: 1, minConfidence: 0.2 },
+      hand: { enabled: false }, object: { enabled: false }, gesture: { enabled: false }, segmentation: { enabled: false }, filter: { enabled: false }
+    });
+    await h.load();
+    try { await h.warmup(); } catch (e) {}
+    human = h;
+    $('#eyeStatus').textContent = '';
+    return h;
+  } catch (e) {
+    console.warn(e);
+    $('#eyeStatus').textContent = 'Face and body tracking could not load on this device. Light, steadiness and length are still checked.';
+    return null;
+  }
+})();
+
+/* ---------------- Voice ---------------- */
+const synth = window.speechSynthesis || null;
+let voice = null;
+function pickVoice() {
+  if (!synth) return;
+  const vs = synth.getVoices().filter(v => /^en/i.test(v.lang));
+  const rank = v => (/AU/i.test(v.lang) ? 0 : /GB/i.test(v.lang) ? 1 : /NZ/i.test(v.lang) ? 2 : 3) - (/premium|enhanced|natural|neural/i.test(v.name) ? .5 : 0);
+  vs.sort((a, b) => rank(a) - rank(b)); voice = vs[0] || null;
+}
+if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+function speak(text, state = 'DIRECTOR', cls = '') {
+  setLine(text, state, cls);
+  if (!S.voice || !synth) return Promise.resolve();
+  synth.cancel();
+  const parts = text.match(/[^.?;]+[.?;]?/g) || [text];
+  return new Promise(res => {
+    parts.forEach((p, i) => {
+      const u = new SpeechSynthesisUtterance(p.trim());
+      if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-AU';
+      u.rate = 1;
+      if (i === 0) u.onstart = () => { if (!cls) $('#orb').classList.add('speak'); };
+      if (i === parts.length - 1) u.onend = u.onerror = () => { $('#orb').classList.remove('speak'); res(); };
+      synth.speak(u);
+    });
+    setTimeout(res, 12000);
+  });
+}
+function setLine(text, state, cls) {
+  $('#dstate').textContent = state;
+  $('#dline').innerHTML = esc(text);
+  const o = $('#orb'); o.className = 'orb' + (cls ? ' ' + cls : '');
+}
+$('#bVoice').onclick = () => { S.voice = !S.voice; $('#bVoice').textContent = S.voice ? 'Voice on' : 'Voice off'; if (!S.voice && synth) synth.cancel(); };
+$('#bSay').onclick = () => announce();
+
+/* ---------------- Plan ---------------- */
+$('#pbBody').innerHTML = PLAYBOOK.map(sec => `<div style="margin-bottom:12px"><div class="mono" style="color:var(--gold)">${esc(sec.h)}</div><ul style="margin:6px 0 0;padding-left:18px;font-size:14px">${sec.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('');
+function samplePlan() {
+  const acts = [$('#fA0').value || 'Struggle', $('#fA1').value || 'Grind', $('#fA2').value || 'Win'];
+  return {
+    title: 'The audition', acts,
+    shots: [
+      { act: 0, title: 'The hook', framing: 'talk', textRoom: true, minLen: 3, maxLen: 8, mood: 'heavy', direction: 'Sit on the studio floor, phone at eye level, and say your line straight down the lens the moment you hit record.', line: 'Nobody films the audition you do not get.', craft: 'Window light on your face, studio behind you, not a wall.', mustSee: 'person sitting on a studio floor talking to camera' },
+      { act: 0, title: 'The email', framing: 'detail', textRoom: false, minLen: 3, maxLen: 7, mood: 'heavy', direction: 'Film your hand holding the phone with an email open. Read it, lock the screen, and put the phone face down.', craft: 'Phone close and low, hold a still beat after it lands.', mustSee: 'hand with a phone being locked and placed face down' },
+      { act: 0, title: 'Studio floor', framing: 'medium', textRoom: true, minLen: 4, maxLen: 8, mood: 'heavy', direction: 'Sit against the wall with your ballet shoes in your lap and stare at them for one long breath.', craft: 'Camera slightly above you so you feel small in the room.', mustSee: 'person sitting on the floor holding ballet shoes' },
+      { act: 1, title: 'Barre at dawn', framing: 'full', textRoom: false, minLen: 4, maxLen: 10, mood: 'steady', direction: 'Full body at the barre. One slow tendu front and one to the back, feet in frame the whole time.', craft: 'Phone at hip height, side-on, barre running across the foreground.', mustSee: 'full body at a barre doing a tendu' },
+      { act: 1, title: 'Feet', framing: 'detail', textRoom: false, minLen: 3, maxLen: 8, mood: 'driven', direction: 'Put the phone low on the floor and film your feet rising through demi-pointe, three times.', craft: 'Phone flat on the floor, feet filling the frame, hold before the first rise.', mustSee: 'feet rising onto demi-pointe' },
+      { act: 1, title: 'Towel', framing: 'medium', textRoom: true, minLen: 3, maxLen: 7, mood: 'driven', direction: 'Walk into frame, take your towel off the barre, wipe your face, then look straight down the lens.', craft: 'Start on an empty frame so the walk-in gives a clean cut.', mustSee: 'person wiping face with towel then looking at camera' },
+      { act: 2, title: 'Centre', framing: 'full', textRoom: false, minLen: 3, maxLen: 8, mood: 'bright', direction: 'Full body in the centre of the room. Hit your best arabesque and hold it for three counts.', craft: 'Low angle from hip height, travel room on the side your leg extends.', mustSee: 'full body arabesque held' },
+      { act: 2, title: 'The look', framing: 'close', textRoom: true, minLen: 3, maxLen: 6, mood: 'bright', direction: 'Close up. Look just off camera, then turn to the lens and let a small smile land.', craft: 'Face the window so the light catches your eyes when you turn.', mustSee: 'face turning to camera and smiling' },
+      { act: 2, title: 'The payoff', framing: 'talk', textRoom: true, minLen: 3, maxLen: 10, mood: 'bright', direction: 'Standing at the barre, phone at eye level, say the payoff line to the lens, then pick up your bag and walk out of frame.', line: 'The callback came from the class nobody saw.', craft: 'Say the line first, then the walk-out gives your end cut.', mustSee: 'person talking to camera at a barre then walking out' }
+    ]
+  };
+}
+function normalisePlan(p) {
+  const acts = (p.acts || []).slice(0, 4).map(String);
+  const shots = (p.shots || []).map((s, i) => ({
+    id: 's' + i + '-' + Math.random().toString(36).slice(2, 6),
+    act: clamp(parseInt(s.act) || 0, 0, acts.length - 1),
+    title: String(s.title || 'Shot ' + (i + 1)).slice(0, 40),
+    direction: String(s.direction || '').replace(/[—–]/g, ',').replace(/!/g, '.'),
+    framing: ['close', 'medium', 'full', 'detail', 'talk'].includes(s.framing) ? s.framing : 'medium',
+    craft: String(s.craft || '').replace(/[—–]/g, ','), line: String(s.line || '').replace(/[—–]/g, ',').replace(/!/g, '.'),
+    textRoom: !!(s.textRoom ?? s.text_room),
+    minLen: clamp(+(s.minLen ?? s.min_len) || 3, 1, 30), maxLen: clamp(+(s.maxLen ?? s.max_len) || 8, 2, 60),
+    mood: ['heavy', 'steady', 'bright', 'driven'].includes(s.mood) ? s.mood : 'steady',
+    mustSee: String(s.mustSee || s.must_see || '')
+  })).sort((a, b) => a.act - b.act);
+  return { title: String(p.title || 'Shoot'), acts, shots };
+}
+function savePlan() { try { localStorage.setItem('sd-plan', JSON.stringify(S.plan)); } catch (e) {} }
+try { if (localStorage.getItem('sd-plan')) $('#bResume').classList.remove('hidden'); } catch (e) {}
+$('#bResume').onclick = () => { try { S.plan = JSON.parse(localStorage.getItem('sd-plan')); renderPlan(); } catch (e) { toast('Could not load the last plan'); } };
+$('#bSample').onclick = () => { S.plan = normalisePlan(samplePlan()); savePlan(); renderPlan(); };
+$('#bPlan').onclick = async () => {
+  const story = $('#fStory').value.trim();
+  if (!story) { $('#fStory').focus(); toast('Tell me what the video is about first'); return; }
+  const acts = [$('#fA0').value, $('#fA1').value, $('#fA2').value].map(s => s.trim()).filter(Boolean);
+  const per = +$('#fPer').value;
+  $('#bPlan').disabled = true; $('#planStatus').textContent = 'Planning your shots…';
+  const prompt = `You are a director planning a self-filmed short vertical video (9:16) for Shane Wuerthner: founder of Athletistry, ballet educator, former Principal Artist at Queensland Ballet and soloist with Vienna State Ballet and San Francisco Ballet. He films alone with his phone on a small stand, so every shot must be possible for one person.
+
+Story: ${story}
+Locations available: ${$('#fWhere').value.trim() || 'his home studio and home'}
+Story acts, in order: ${acts.join(', ')}. Plan exactly ${per} shots per act.
+Content strategy: ${STRATEGY[$('#fType').value]}
+
+Each shot's direction is read aloud to him while he sets up, so write it as one or two short spoken sentences in second person, starting with the framing or position, then one clear physical action. Concrete and visual: what he does with his body, hands, eyes, breath. No camera jargon. Australian English. No em dashes, no exclamation marks, never the word "transform".
+Mix framings across the shoot: talk (talking to camera, chest up), close (head and shoulders), medium (head to waist), full (head to feet, for any dance movement), detail (hands, feet, shoes, objects). Follow the playbook: vary shot size between consecutive shots, favour tight shots, sequence moments as hands, face, wide, and plan enter or exit frame moments. ${$('#fYap').checked ? 'Include talking-to-camera shots: make the very first shot a talk shot carrying the hook, and add one talk shot in the last act for the payoff or call to action. Each talk shot has a "line": the exact words he says, 15 words or fewer, no self-introduction, passing the three tests above.' : 'Do not use talk shots.'}
+Set text_room true on shots where on-screen text will sit above his head (talk shots and the first shot of each act).
+Give every shot a "craft" note under 14 words from the playbook: camera height or angle, light direction, foreground, or the beat to hold before and after.
+
+PLAYBOOK:
+${PLAYBOOK_TEXT}
+
+Return ONLY JSON:
+{"title":"2 to 4 words","acts":[${acts.map(a => JSON.stringify(a)).join(',')}],"shots":[{"act":0,"title":"2 or 3 words naming the place or moment","direction":"...","framing":"talk|close|medium|full|detail","text_room":true,"line":"talk shots only","craft":"...","min_len":3,"max_len":8,"mood":"heavy|steady|driven|bright","must_see":"what must be visible for the take to count, under 12 words"}]}`;
+  try {
+    const j = await ask(prompt, { modelTier: 'default' });
+    if (!j.acts || !j.acts.length) j.acts = acts;
+    S.plan = normalisePlan(j);
+    if (!S.plan.shots.length) throw new Error('No shots came back');
+    savePlan(); renderPlan(); $('#planStatus').textContent = '';
+  } catch (e) {
+    $('#planStatus').textContent = (e && e.code === 'rate_limited') ? 'Too many requests. Try again in a minute.' : 'Could not plan that one. Try again, or use the sample shoot.';
+  }
+  $('#bPlan').disabled = !aiOn();
+};
+function renderPlan() {
+  const p = S.plan;
+  $('#planOut').classList.remove('hidden');
+  $('#planTitle').textContent = p.title;
+  $('#planPill').textContent = p.title;
+  let html = '', n = 0;
+  p.acts.forEach((a, ai) => {
+    html += `<div class="sl-act" style="color:${ACT_C[ai]}">${esc(a)}</div>`;
+    p.shots.filter(s => s.act === ai).forEach(s => {
+      n++;
+      html += `<div class="sl" data-id="${s.id}"><div class="n">${n}</div><div>
+        <div class="t">${esc(s.title)}</div>
+        <div class="d" contenteditable="true" spellcheck="true">${esc(s.direction)}</div>
+        ${s.framing === 'talk' ? `<div class="mono" style="text-transform:none;letter-spacing:.02em;font-size:12.5px;margin-bottom:6px;color:var(--gold)">Say: <span class="ln" contenteditable="true">${esc(s.line)}</span></div>` : ''}
+        ${s.craft ? `<div class="muted" style="font-size:12.5px;margin-bottom:6px">Craft: ${esc(s.craft)}</div>` : ''}
+        <div class="meta">
+          <select data-k="framing">${['talk', 'close', 'medium', 'full', 'detail'].map(f => `<option ${f === s.framing ? 'selected' : ''}>${f}</option>`).join('')}</select>
+          <select data-k="textRoom"><option value="1" ${s.textRoom ? 'selected' : ''}>room for text</option><option value="0" ${!s.textRoom ? 'selected' : ''}>no text</option></select>
+          <span class="tag">${s.minLen}–${s.maxLen}s</span><span class="tag">${esc(s.mood)}</span>
+        </div></div></div>`;
+    });
+  });
+  $('#shotlist').innerHTML = html;
+  $('#shotlist').querySelectorAll('.sl').forEach(el => {
+    const s = p.shots.find(x => x.id === el.dataset.id);
+    el.querySelector('.d').addEventListener('blur', e => { s.direction = e.target.textContent.trim().replace(/[—–]/g, ','); savePlan(); });
+    const ln = el.querySelector('.ln'); if (ln) ln.addEventListener('blur', e => { s.line = e.target.textContent.trim().replace(/[—–]/g, ','); savePlan(); });
+    el.querySelectorAll('select').forEach(sel => sel.onchange = () => { s[sel.dataset.k] = sel.dataset.k === 'textRoom' ? sel.value === '1' : sel.value; savePlan(); });
+  });
+  $('#planOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------------- Shoot flow ---------------- */
+$('#bStart').onclick = () => {
+  if (synth) synth.speak(new SpeechSynthesisUtterance(' '));
+  S.idx = 0; S.takes = {}; S.saved = {}; S.t0 = Date.now();
+  show('shoot');
+  $('#clock').classList.remove('hidden');
+  clearInterval(S.timer);
+  S.timer = setInterval(() => { const s = Math.floor((Date.now() - S.t0) / 1000); $('#clock').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }, 1000);
+  goTo(0, true);
+};
+function show(v) {
+  ['script', 'plan', 'shoot', 'done'].forEach(k => $('#v' + k[0].toUpperCase() + k.slice(1)).classList.toggle('hidden', k !== v));
+  document.querySelectorAll('#tabs button').forEach(b => { b.classList.toggle('on', b.dataset.v === v || (v === 'done' && b.dataset.v === 'shoot')); if (b.dataset.v === 'shoot') b.disabled = !S.t0; });
+  window.scrollTo(0, 0);
+}
+const shot = () => S.plan.shots[S.idx];
+const ordinal = n => ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth'][n] || ('shot ' + (n + 1));
+function announce() {
+  const s = shot(); if (!s) return;
+  const first = S.idx === 0 ? 'First shot. ' : S.idx === S.plan.shots.length - 1 ? 'Last shot. ' : `Shot ${S.idx + 1}. `;
+  $('#dcraft').textContent = (s.craft ? 'Craft: ' + s.craft : '');
+  speak(first + s.direction + (s.framing === 'talk' && s.line ? ' Your line: ' + s.line : ''), 'DIRECTOR');
+}
+function goTo(i, say = true) {
+  S.idx = clamp(i, 0, S.plan.shots.length - 1);
+  const s = shot();
+  renderDots(); renderRails();
+  const t = S.takes[s.id];
+  if (S.live && S.live.on) { mountLive(); $('#checks').innerHTML = ''; }
+  else if (t) showTake(t); else resetCard();
+  if (say) announce();
+}
+function hintFor(s) { return FRAMING_HINT[s.framing] + (s.textRoom ? ' Leave room above your head for text.' : '') + ` ${s.minLen}s or longer.`; }
+function resetCard() {
+  const ph = $('#phone');
+  ph.className = 'phone drop';
+  ph.innerHTML = `<div><div class="up">↑</div><div class="big">Drop your take</div><div class="mono muted" style="margin-top:8px">SHOT ${S.idx + 1} · ${esc(shot().title)}</div><div class="hint">${esc(hintFor(shot()))}</div></div>`;
+  $('#checks').innerHTML = '';
+  $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden');
+  $('#bPick').textContent = 'Add take';
+}
+function renderDots() {
+  $('#dots').innerHTML = S.plan.shots.map((s, i) => `<i class="${S.saved[s.id] ? 'done' : ''} ${i === S.idx ? 'now' : ''}" title="${esc(s.title)}"></i>`).join('');
+}
+function renderRails() {
+  const p = S.plan;
+  $('#rails').style.setProperty('--acts', p.acts.length);
+  $('#rails').innerHTML = p.acts.map((a, ai) => {
+    const ss = p.shots.filter(s => s.act === ai);
+    const saved = ss.filter(s => S.saved[s.id]).length;
+    return `<div class="rail" style="--c:${ACT_C[ai]}"><span class="nm">${esc(a)}</span><span class="slots">${ss.map(s => {
+      const t = S.saved[s.id]; const i = p.shots.indexOf(s);
+      return `<button class="slot ${i === S.idx ? 'now' : ''}" data-i="${i}" title="${esc(s.title)}">${t ? `<img src="${t.thumb}" alt="">` : ''}</button>`;
+    }).join('')}</span><span class="ct">${saved} / ${ss.length}</span></div>`;
+  }).join('');
+  $('#rails').querySelectorAll('.slot').forEach(b => b.onclick = () => goTo(+b.dataset.i, true));
+}
+$('#bPrev').onclick = () => goTo(S.idx - 1);
+$('#bSkip').onclick = () => advance();
+$('#bWrap').onclick = () => finish();
+$('#bNext').onclick = () => advance();
+function advance() {
+  const next = S.plan.shots.findIndex((s, i) => i > S.idx && !S.saved[s.id]);
+  const any = S.plan.shots.findIndex(s => !S.saved[s.id]);
+  if (next >= 0) goTo(next);
+  else if (any >= 0 && any !== S.idx) goTo(any);
+  else if (any < 0) finish();
+  else goTo(Math.min(S.idx + 1, S.plan.shots.length - 1));
+}
+
+/* take input */
+$('#bPick').onclick = () => $('#fTake').click();
+$('#fTake').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleTake(f); };
+const phone = $('#phone');
+phone.addEventListener('click', () => { if (phone.classList.contains('drop')) $('#fTake').click(); });
+['dragover', 'dragenter'].forEach(ev => phone.addEventListener(ev, e => { e.preventDefault(); phone.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => phone.addEventListener(ev, e => { e.preventDefault(); phone.classList.remove('over'); }));
+phone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f && /^video\//.test(f.type || 'video/')) handleTake(f); });
+$('#bKeep').onclick = () => { const t = S.takes[shot().id]; if (!t) return; t.saved = true; t.overridden = true; S.saved[t.shotId] = t; showTake(t); renderDots(); renderRails(); speak('Kept. Moving on.', 'DIRECTOR', 'pass').then(() => setTimeout(advance, 500)); };
+
+async function handleTake(file, hint = {}) {
+  const s = shot(); const myIdx = S.idx;
+  const prev = S.takes[s.id];
+  const url = URL.createObjectURL(file);
+  const t = { file, url, saved: false, checks: [], shotId: s.id, attempt: (prev ? prev.attempt : 0) + 1 };
+  S.current = t;
+  if (synth) synth.cancel();
+  setLine('Checking your shot.', 'CHECKING', 'check');
+  const ph = $('#phone');
+  ph.className = 'phone';
+  ph.innerHTML = `<video muted playsinline loop autoplay src="${url}"></video><canvas></canvas><div class="verdict wait"><span>checking</span><small>WAIT</small></div>`;
+  $('#checks').innerHTML = `<h4>Shot ${S.idx + 1} · ${esc(s.title)}</h4><div class="ck neutral"><div class="r"><span>reading the take</span><span class="v">…</span></div></div>`;
+  $('#bKeep').classList.add('hidden'); $('#bNext').classList.add('hidden');
+  try {
+    const r = await analyseTake(file, s, hint);
+    Object.assign(t, r);
+    if (S.idx !== myIdx || S.current !== t) return;
+    t.saved = t.pass;
+    S.takes[s.id] = t;
+    if (t.pass) S.saved[s.id] = t;
+    showTake(t);
+    renderDots(); renderRails();
+    if (t.pass) {
+      await speak("That's the one.", 'CHECKING', 'pass');
+      setTimeout(() => { if (S.idx === myIdx) advance(); }, 700);
+    } else {
+      setLine(t.fixLine, 'CHECKING', 'fail');
+      const line = await directorLine(t, s, prev).catch(() => null);
+      if (S.idx !== myIdx) return;
+      await speak((line || t.fixLine) + (t.attempt <= 2 ? ' ' + s.direction : ''), 'DIRECTOR', 'fail');
+      if (S.live.on && S.idx === myIdx) setTimeout(() => { if (S.live.on && S.idx === myIdx) mountLive(); }, 600);
+    }
+  } catch (e) {
+    console.error(e);
+    setLine('I could not read that file. Try exporting it from your camera roll again.', 'CHECKING', 'fail');
+    resetCard();
+  }
+}
+
+function showTake(t) {
+  const s = S.plan.shots.find(x => x.id === t.shotId);
+  const ph = $('#phone');
+  if (!ph.querySelector('video') || ph.querySelector('video').src !== t.url) {
+    ph.className = 'phone';
+    ph.innerHTML = `<video muted playsinline loop autoplay src="${t.url}"></video><canvas></canvas><div class="verdict"></div>`;
+  }
+  const v = ph.querySelector('.verdict');
+  v.className = 'verdict ' + (t.saved ? 'ok' : 'no');
+  v.innerHTML = t.saved ? `<span>${t.overridden ? 'kept' : 'good shot'}</span><small>SAVED</small>` : `<span>${esc(t.short || 'not yet')}</span><small>RETAKE</small>`;
+  drawOverlay(ph.querySelector('canvas'), t);
+  $('#checks').innerHTML = `<h4>Shot ${S.plan.shots.indexOf(s) + 1} · ${esc(s.title)}</h4>` + t.checks.map(c => `
+    <div class="ck ${c.status}"><div class="r"><span>${esc(c.label)}</span><span class="v">${esc(c.value)}</span></div>${c.note ? `<div class="note">${esc(c.note)}</div>` : ''}</div>`).join('');
+  $('#bKeep').classList.toggle('hidden', t.saved);
+  $('#bNext').classList.toggle('hidden', !t.saved);
+  $('#bPick').textContent = t.saved ? 'Replace take' : 'Retake';
+}
+
+function drawOverlay(cv, t) {
+  const W = cv.clientWidth, H = cv.clientHeight, dpr = devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  // map normalised video coords to object-fit:cover box
+  const ar = t.vw / t.vh, car = W / H;
+  let sw, sh, ox, oy;
+  if (ar > car) { sh = H; sw = H * ar; ox = (W - sw) / 2; oy = 0; } else { sw = W; sh = W / ar; ox = 0; oy = (H - sh) / 2; }
+  const X = x => ox + x * sw, Y = y => oy + y * sh;
+  g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 1; g.beginPath();
+  [1 / 3, 2 / 3].forEach(f => { g.moveTo(W * f, 0); g.lineTo(W * f, H); g.moveTo(0, H * f); g.lineTo(W, H * f); }); g.stroke();
+  const bad = t.checks.find(c => c.key === 'headroom' && c.status === 'fail') || t.checks.find(c => c.key === 'framing' && c.status === 'fail');
+  if (t.face) {
+    const f = t.face;
+    g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 1.5;
+    roundRect(g, X(f.x), Y(f.y), f.w * sw, f.h * sh, 10); g.stroke();
+    g.font = '9px DM Mono, monospace'; g.fillStyle = 'rgba(255,255,255,.7)'; g.textAlign = 'center';
+    g.fillText('FACE', X(f.x + f.w / 2), Y(f.y) - 4);
+  }
+  if (t.headTop != null && t.frameKind !== 'detail') {
+    const y = Y(t.headTop), col = bad ? '#ea6f5f' : '#7fd1a8';
+    g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(W / 2, Math.max(0, Y(0))); g.lineTo(W / 2, y); g.stroke();
+    g.beginPath(); g.moveTo(W / 2 - 8, y); g.lineTo(W / 2 + 8, y); g.stroke();
+    const label = `headroom ${Math.round(t.headTop * 100)}%`;
+    g.font = '11px DM Mono, monospace'; const tw = g.measureText(label).width + 14;
+    g.fillStyle = 'rgba(10,20,22,.82)'; roundRect(g, W / 2 - tw / 2, 10, tw, 20, 6); g.fill();
+    g.fillStyle = col; g.textAlign = 'center'; g.fillText(label, W / 2, 24);
+  }
+  if (t.ankles && t.ankles.length) {
+    t.ankles.forEach(a => { g.fillStyle = a.ok ? '#7fd1a8' : '#ea6f5f'; g.beginPath(); g.arc(X(a.x), Math.min(H - 6, Y(a.y)), 5, 0, 7); g.fill(); });
+  }
+}
+function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+/* ---------------- Take analysis ---------------- */
+const vid = document.createElement('video'); vid.muted = true; vid.playsInline = true; vid.preload = 'auto';
+const fc = document.createElement('canvas'); const fctx = fc.getContext('2d', { willReadFrequently: true });
+const sc = document.createElement('canvas'); const sctx = sc.getContext('2d', { willReadFrequently: true });
+const seek = t => new Promise(res => { let d = false; const f = () => { if (d) return; d = true; vid.removeEventListener('seeked', f); requestAnimationFrame(() => res()); }; vid.addEventListener('seeked', f); setTimeout(f, 2500); vid.currentTime = t; });
+
+function grayTiny() {
+  sctx.drawImage(vid, 0, 0, sc.width, sc.height);
+  const d = sctx.getImageData(0, 0, sc.width, sc.height).data, g = new Float32Array(sc.width * sc.height);
+  for (let i = 0, p = 0; i < g.length; i++, p += 4) g[i] = .299 * d[p] + .587 * d[p + 1] + .114 * d[p + 2];
+  return g;
+}
+function regionStats(d, W, x0, y0, x1, y1) {
+  let n = 0, s = 0, s2 = 0, L = 0, Ln = 0, R = 0, Rn = 0; const mx = (x0 + x1) / 2;
+  for (let y = Math.max(0, y0 | 0); y < Math.min(fc.height, y1 | 0); y += 2) for (let x = Math.max(0, x0 | 0); x < Math.min(W, x1 | 0); x += 2) {
+    const p = (y * W + x) * 4, l = (.299 * d[p] + .587 * d[p + 1] + .114 * d[p + 2]) / 255;
+    n++; s += l; s2 += l * l; if (x < mx) { L += l; Ln++; } else { R += l; Rn++; }
+  }
+  const m = n ? s / n : 0;
+  return { mean: m, sd: n ? Math.sqrt(Math.max(0, s2 / n - m * m)) : 0, left: Ln ? L / Ln : m, right: Rn ? R / Rn : m };
+}
+
+function shiftMag(g1, g2, w, h, pb) {
+  const R = 4;
+  const inP = (x, y) => { if (!pb) return false; const nx = x / w, ny = y / h; return nx > pb.x - .04 && nx < pb.x + pb.w + .04 && ny > pb.y - .04 && ny < pb.y + pb.h + .04; };
+  // texture of the region we will match on
+  let s = 0, s2 = 0, n = 0;
+  for (let y = R; y < h - R; y++) for (let x = R; x < w - R; x++) { if (inP(x, y)) continue; const v = g1[y * w + x]; s += v; s2 += v * v; n++; }
+  if (n < w * h * .15 || Math.sqrt(Math.max(0, s2 / n - (s / n) ** 2)) < 6) pb = null;
+  const cost = (dx, dy) => { let c = 0, m = 0; for (let y = R; y < h - R; y++) for (let x = R; x < w - R; x++) { if (inP(x, y)) continue; c += Math.abs(g1[y * w + x] - g2[(y + dy) * w + x + dx]); m++; } return m ? c / m : 0; };
+  const c0 = cost(0, 0); let best = c0, bm = 0;
+  for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+    if (!dx && !dy) continue;
+    const c = cost(dx, dy);
+    if (c < best * .95) { best = c; bm = Math.hypot(dx, dy); }
+  }
+  return bm;
+}
+function frameDiff(g1, g2) { let s = 0; for (let i = 0; i < g1.length; i++) s += Math.abs(g1[i] - g2[i]); return s / g1.length / 255; }
+
+async function audioCheck(file) {
+  if (file.size > 250e6) return null;
+  try {
+    const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!AC) return null;
+    const ctx = new AC(1, 44100, 44100);
+    const buf = await new Promise((res, rej) => { file.arrayBuffer().then(ab => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); }, rej); });
+    const d = buf.getChannelData(0), sr = buf.sampleRate, win = Math.round(sr * .02);
+    const rms = []; let clip = 0;
+    for (let i = 0; i + win <= d.length; i += win) { let s = 0; for (let j = i; j < i + win; j++) { s += d[j] * d[j]; if (Math.abs(d[j]) > .985) clip++; } rms.push(Math.sqrt(s / win)); }
+    if (!rms.length) return null;
+    const sorted = rms.slice().sort((a, b) => a - b);
+    const floor = sorted[Math.floor(sorted.length * .1)], loud = sorted[Math.floor(sorted.length * .95)];
+    const thr = Math.max(floor * 3.5, .012);
+    let start = null, end = null;
+    for (let i = 0; i + 3 < rms.length; i++) if (rms[i] > thr && rms[i + 1] > thr && rms[i + 2] > thr) { start = i * .02; break; }
+    for (let i = rms.length - 1; i >= 3; i--) if (rms[i] > thr && rms[i - 1] > thr) { end = (i + 1) * .02; break; }
+    let longest = 0, run = 0;
+    if (start != null) for (let i = Math.round(start / .02); i < Math.round(end / .02); i++) { if (rms[i] < thr) { run++; longest = Math.max(longest, run); } else run = 0; }
+    return { start, end, dur: buf.duration, levelDb: 20 * Math.log10(loud || 1e-6), clipFrac: clip / d.length, longestPause: longest * .02, speech: start != null };
+  } catch (e) { return null; }
+}
+
+async function analyseTake(file, s, hint = {}) {
+  const url = URL.createObjectURL(file);
+  vid.src = url;
+  await new Promise((res, rej) => { vid.onloadedmetadata = res; vid.onerror = () => rej(new Error('decode')); });
+  try { await vid.play(); vid.pause(); } catch (e) {}
+  let dur = vid.duration;
+  if (!isFinite(dur) || !dur) {
+    await new Promise(res => { const f = () => { vid.removeEventListener('timeupdate', f); res(); }; vid.addEventListener('timeupdate', f); setTimeout(f, 2500); vid.currentTime = 1e9; });
+    dur = isFinite(vid.duration) && vid.duration ? vid.duration : (hint.dur || 5);
+  }
+  const vw = vid.videoWidth, vh = vid.videoHeight;
+  const k = 480 / Math.max(vw, vh);
+  fc.width = Math.round(vw * k); fc.height = Math.round(vh * k);
+  sc.width = 64; sc.height = Math.max(8, Math.round(64 * vh / vw));
+  const W = fc.width, H = fc.height, F = s.framing, isTalk = F === 'talk';
+  const h = await eye;
+  const audioP = isTalk ? audioCheck(file) : Promise.resolve(null);
+
+  const N = clamp(Math.round(dur * 2), 6, 12);
+  const times = Array.from({ length: N }, (_, i) => dur * (0.08 + 0.84 * i / (N - 1)));
+  const stabPts = new Set([1, Math.floor(N / 3), Math.floor(2 * N / 3), N - 2]);
+  const fr = [], shifts = [], subjMotion = [], stills = [];
+  let thumb = null;
+  for (let i = 0; i < N; i++) {
+    await seek(times[i]);
+    fctx.drawImage(vid, 0, 0, W, H);
+    const d = fctx.getImageData(0, 0, W, H).data;
+    let face = null, body = null;
+    if (h) {
+      try {
+        const r = await h.detect(fc);
+        const f = (r.face || []).filter(x => x.score > .45).sort((a, b) => b.score - a.score)[0];
+        if (f) face = { x: f.box[0] / W, y: f.box[1] / H, w: f.box[2] / W, h: f.box[3] / H };
+        const b = (r.body || []).filter(x => x.score > .3)[0];
+        if (b) { const kp = {}; b.keypoints.forEach(p => kp[p.part] = { x: p.position[0] / W, y: p.position[1] / H, s: p.score }); body = { box: { x: b.box[0] / W, y: b.box[1] / H, w: b.box[2] / W, h: b.box[3] / H }, kp }; }
+      } catch (e) {}
+    }
+    const all = regionStats(d, W, 0, 0, W, H);
+    const fs = face ? regionStats(d, W, (face.x + face.w * .15) * W, (face.y + face.h * .1) * H, (face.x + face.w * .85) * W, (face.y + face.h * .9) * H) : null;
+    let rs = 0, bs = 0, cnt = 0, sat = 0;
+    for (let p = 0; p < d.length; p += 64) { rs += d[p]; bs += d[p + 2]; const mx = Math.max(d[p], d[p + 1], d[p + 2]), mn = Math.min(d[p], d[p + 1], d[p + 2]); sat += mx ? (mx - mn) / mx : 0; cnt++; }
+    fr.push({ t: times[i], face, body, all, fs, warm: (rs - bs) / cnt / 255, sat: sat / cnt });
+    if (i === Math.floor(N / 2)) thumb = await new Promise(r => fc.toBlob(r, 'image/jpeg', .82));
+    if ([0, Math.floor(N / 2), N - 1].includes(i)) stills.push(await new Promise(r => fc.toBlob(r, 'image/jpeg', .8)));
+    if (stabPts.has(i) && times[i] + .15 < dur) {
+      const g1 = grayTiny(); await seek(times[i] + .15); const g2 = grayTiny();
+      const pb = body ? body.box : face ? { x: face.x - face.w, y: face.y - face.h * .5, w: face.w * 3, h: 1 } : null;
+      shifts.push(shiftMag(g1, g2, sc.width, sc.height, pb));
+      subjMotion.push(frameDiff(g1, g2));
+    }
+  }
+  // handles: is there a still beat at the start and end?
+  let headMove = 0, tailMove = 0;
+  if (dur > 1.6) {
+    await seek(.05); const a1 = grayTiny(); await seek(.4); const a2 = grayTiny();
+    await seek(Math.max(0, dur - .45)); const b1 = grayTiny(); await seek(Math.max(0, dur - .08)); const b2 = grayTiny();
+    headMove = frameDiff(a1, a2); tailMove = frameDiff(b1, b2);
+  }
+  const actionP = aiOn() ? checkTake(s, stills).catch(() => null) : Promise.resolve(null);
+
+  // ---- aggregate
+  const faces = fr.filter(f => f.face).map(f => f.face);
+  const bodies = fr.filter(f => f.body).map(f => f.body);
+  const personFrac = fr.filter(f => f.face || f.body).length / fr.length;
+  const face = faces.length ? { x: median(faces.map(f => f.x)), y: median(faces.map(f => f.y)), w: median(faces.map(f => f.w)), h: median(faces.map(f => f.h)) } : null;
+  let headTop = null;
+  if (face) headTop = face.y - face.h * .32;
+  else if (bodies.length) {
+    headTop = median(bodies.map(b => { const kk = b.kp; const e = [kk.leftEye, kk.rightEye, kk.nose].filter(p => p && p.s > .35); if (!e.length) return null; const ey = Math.min(...e.map(p => p.y)); const sh = [kk.leftShoulder, kk.rightShoulder].filter(p => p && p.s > .35); const sy = sh.length ? sh.reduce((a, p) => a + p.y, 0) / sh.length : ey + .1; return ey - (sy - ey) * .7; }));
+  }
+  if (headTop != null) headTop = Math.max(0, headTop);
+  const eyeY = face ? face.y + face.h * .4 : null;
+  const ankleFrames = bodies.map(b => [b.kp.leftAnkle, b.kp.rightAnkle].filter(Boolean));
+  const feetFrac = bodies.length ? ankleFrames.filter(a => a.some(p => p.s > .3 && p.y < .975)).length / bodies.length : 0;
+  const midAnk = ankleFrames.length ? ankleFrames[Math.floor(ankleFrames.length / 2)] : [];
+  const ankles = midAnk.filter(p => p.s > .15).map(p => ({ x: p.x, y: p.y, ok: p.s > .3 && p.y < .975 }));
+  const fh = face ? face.h : null;
+  const bodyH = bodies.length ? median(bodies.map(b => b.box.h)) : null;
+
+  const checks = [], fails = [];
+  const add = (key, label, value, status, note = '') => checks.push({ key, label, value, status, note });
+
+  // framing (shot size)
+  const sizes = { close: [.12, .5], medium: [.04, .3], talk: [.09, .36] };
+  if (F === 'detail') add('framing', 'framing', 'detail', 'ok');
+  else if (!h) add('framing', 'framing', 'not read', 'neutral');
+  else if (personFrac < .35) { add('framing', 'framing', 'no one', 'fail', 'I need to see you in this shot'); fails.push(['none', 'no one in frame']); }
+  else if (F === 'full') {
+    if (feetFrac < .5) { add('framing', 'framing', 'tight', 'fail', 'feet are out of frame'); fails.push(['feet', 'feet cut off']); }
+    else add('framing', 'framing', 'full body', 'ok');
+  } else {
+    const [lo, hi] = sizes[F] || sizes.medium;
+    if (fh != null && fh > hi) { add('framing', 'framing', 'tight', 'fail', F === 'medium' ? 'step back to show head to waist' : 'face fills too much of the frame'); fails.push([s.textRoom ? 'tight_text' : 'tight', 'too tight']); }
+    else if (fh != null && fh < lo && !(F === 'medium' && (bodyH || 0) > .45)) { add('framing', 'framing', 'loose', F === 'medium' ? 'warn' : 'fail', F === 'talk' ? 'chest up is the talking frame' : 'bring the camera closer'); if (F !== 'medium') fails.push(['loose', 'too wide']); }
+    else add('framing', 'framing', F === 'talk' ? 'chest up' : F, 'ok');
+  }
+  if (F === 'full' && h && bodies.length) add('feet', 'feet', feetFrac >= .5 ? 'in frame' : 'cropped', feetFrac >= .5 ? 'ok' : 'fail');
+
+  // headroom
+  if (F !== 'detail' && headTop != null) {
+    const pct = Math.round(headTop * 100), need = s.textRoom ? 12 : 2;
+    if (pct < need) {
+      add('headroom', 'headroom', pct + '%', 'fail', s.textRoom ? 'needs 12% or more for text cards' : 'head is touching the top');
+      if (!fails.some(f => /tight/.test(f[0]))) fails.push([s.textRoom ? 'headroom_text' : 'headroom', 'no headroom']);
+    } else if (pct > 45 && F !== 'full') add('headroom', 'headroom', pct + '%', 'warn', 'a lot of empty space above you');
+    else add('headroom', 'headroom', pct + '%', 'ok');
+  }
+  // eyeline on the upper third
+  if (eyeY != null && ['close', 'medium', 'talk'].includes(F)) {
+    const e = Math.round(eyeY * 100);
+    if (eyeY > .5) add('eyeline', 'eyeline', e + '% down', 'warn', 'eyes sit low; raise the phone or tilt up');
+    else if (eyeY < .2) add('eyeline', 'eyeline', e + '% down', 'warn', 'eyes sit very high in frame');
+    else add('eyeline', 'eyeline', Math.abs(eyeY - 1 / 3) < .09 ? 'upper third' : e + '% down', 'ok');
+  }
+
+  // light
+  const fM = median(fr.map(f => f.fs && f.fs.mean)), aM = median(fr.map(f => f.all.mean));
+  const fSd = median(fr.map(f => f.fs && f.fs.sd));
+  const lr = median(fr.map(f => f.fs ? (f.fs.left - f.fs.right) / Math.max(.05, (f.fs.left + f.fs.right) / 2) : null));
+  let light = '';
+  if (fM != null) {
+    const dir = Math.abs(lr) > .16 ? 'side' : 'front', qual = fSd < .16 ? 'soft' : 'hard';
+    light = `${qual}, ${dir}`;
+    if (fM < .2) { add('light', 'light', 'dark', 'fail', 'face is underexposed'); fails.push(['dark', 'too dark']); }
+    else if (fM > .9) { add('light', 'light', 'blown', 'fail', 'face is overexposed'); fails.push(['blown', 'blown out']); }
+    else if (aM - fM > .2) add('light', 'light', 'backlit', 'warn', 'background is brighter than your face; turn towards the light');
+    else add('light', 'light', light, 'ok');
+  } else {
+    if (aM < .14) { add('light', 'light', 'dark', 'fail', 'whole frame is underexposed'); fails.push(['dark_all', 'too dark']); }
+    else if (aM > .92) { add('light', 'light', 'blown', 'fail'); fails.push(['blown', 'blown out']); }
+    else add('light', 'light', aM < .35 ? 'low' : 'even', 'ok');
+  }
+
+  // stability (camera translation measured on the background)
+  const shMed = median(shifts) || 0, shMax = shifts.length ? Math.max(...shifts) : 0;
+  if (shMed >= 1.5 || shMax >= 3) { add('stability', 'stability', 'shaky', 'fail', 'the camera is moving'); fails.push(['shaky', 'shaky']); }
+  else if (shMed >= 1 || shMax >= 2) add('stability', 'stability', 'some drift', 'warn', 'lock the phone down for a cleaner cut');
+  else add('stability', 'stability', 'steady', 'ok');
+
+  // length
+  if (dur < s.minLen) { add('length', 'length', dur.toFixed(1) + 's', 'fail', `needs ${s.minLen}s or more`); fails.push(['short', 'too short']); }
+  else if (dur > s.maxLen * 3) add('length', 'length', dur.toFixed(1) + 's', 'warn', 'long take, trim in the edit');
+  else add('length', 'length', dur.toFixed(1) + 's', 'ok');
+
+  // handles: a still beat before and after the action gives the editor a clean cut
+  const midMotion = median(subjMotion) || 0;
+  if (!isTalk && F !== 'detail' && dur > 1.6 && midMotion > .01) {
+    const hot = v => v > Math.max(.02, midMotion * 1.3);
+    if (hot(headMove) || hot(tailMove)) add('handles', 'handles', hot(headMove) && hot(tailMove) ? 'none' : hot(headMove) ? 'no start beat' : 'no end beat', 'warn', 'hold still for a beat before and after the action');
+    else add('handles', 'handles', 'clean', 'ok');
+  }
+
+  // talking to camera: audio
+  const audio = await audioP;
+  if (isTalk) {
+    if (!audio || !audio.speech) { add('audio', 'speech', 'none heard', 'fail', 'I could not hear you speak'); fails.push(['nospeech', 'no speech']); }
+    else {
+      if (audio.start > 1) { add('start', 'first word', audio.start.toFixed(1) + 's', 'fail', 'start talking the moment you hit record'); fails.push(['slowstart', 'slow start']); }
+      else add('start', 'first word', audio.start.toFixed(1) + 's', 'ok');
+      if (audio.clipFrac > .001) add('level', 'level', 'clipping', 'warn', 'too loud; move the phone back a little');
+      else if (audio.levelDb < -32) add('level', 'level', Math.round(audio.levelDb) + ' dB', 'warn', 'quiet; get closer to the phone or speak up');
+      else add('level', 'level', Math.round(audio.levelDb) + ' dB', 'ok');
+      if (audio.longestPause > 1.2) add('pause', 'longest pause', audio.longestPause.toFixed(1) + 's', 'warn', 'cut or tighten that pause');
+    }
+  }
+
+  // reads as
+  const motion = midMotion, warm = median(fr.map(f => f.warm)), sat = median(fr.map(f => f.sat));
+  let reads = 'steady';
+  if (motion > .07) reads = 'driven';
+  else if (aM < .4 || (warm < .02 && sat < .22 && motion < .03)) reads = 'heavy';
+  else if (aM > .55 && (warm > .05 || sat > .3)) reads = 'bright';
+  const moodOk = reads === s.mood || s.mood === 'steady';
+  add('reads', 'reads as', reads, moodOk ? 'ok' : 'warn', moodOk ? '' : `wanted ${s.mood}`);
+
+  // Claude: action, eye contact and craft
+  const cj = await actionP;
+  if (cj) {
+    if (cj.matches) add('action', 'action', 'matches', 'ok');
+    else { add('action', 'action', 'not quite', 'fail', cj.seen || ''); fails.push(['action', 'wrong action', cj.fix]); }
+    if (isTalk && cj.eye_contact === false) add('eyes', 'eye contact', 'off lens', 'warn', 'look into the lens, not at the screen');
+    else if (isTalk && cj.eye_contact) add('eyes', 'eye contact', 'on lens', 'ok');
+    (cj.craft || []).slice(0, 2).forEach(c => add('craft', 'craft', '', 'warn', c));
+  } else if (aiOn()) add('action', 'action', 'not checked', 'neutral');
+
+  URL.revokeObjectURL(url);
+  const order = ['none', 'nospeech', 'tight_text', 'tight', 'feet', 'loose', 'headroom_text', 'headroom', 'shaky', 'dark', 'dark_all', 'blown', 'slowstart', 'short', 'action'];
+  fails.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  const FIX = {
+    none: "I can't see you in this take. Get yourself in frame and go again.",
+    nospeech: "I couldn't hear you. Check the mic isn't covered and say the line again.",
+    tight_text: "The shot is too tight. There's no room above your head for text. Step back and do it again.",
+    tight: 'The shot is too tight. Step back and do it again.',
+    loose: isTalk ? 'Too wide for talking. Bring the phone closer, chest up, and go again.' : 'Too wide. Bring the phone closer and do it again.',
+    feet: 'Your feet are cut off. Move the phone back until I can see the floor under your feet, then do it again.',
+    headroom_text: "There's no room above your head for text. Tilt the phone down or step back, then do it again.",
+    headroom: 'Your head is touching the top of the frame. Tilt the phone down a touch and go again.',
+    shaky: 'The camera is moving. Sit the phone on the stand and do it again.',
+    dark: 'Your face is too dark. Turn towards the window or a light and go again.',
+    dark_all: 'Too dark. Find more light and go again.',
+    blown: 'Too bright on your face. Step out of the direct light and go again.',
+    slowstart: `You took ${audio && audio.start ? audio.start.toFixed(1) : 'too long'} seconds to start. Hit record and say the first word straight away.`,
+    short: `That take is only ${Math.round(dur)} seconds. Hold it for at least ${s.minLen}, then do it again.`,
+    action: (fails.find(f => f[0] === 'action') || [])[2] || 'That is not quite what I asked for. Do it again.'
+  };
+  const pass = fails.length === 0;
+  let fixLine = pass ? '' : FIX[fails[0][0]];
+  const second = fails.find(f => f[0] !== fails[0][0] && !/tight|headroom/.test(f[0]) && f[0] !== 'action');
+  if (second) fixLine += ' ' + FIX[second[0]].split('.')[0] + ' too.';
+  return { pass, fixLine, short: pass ? '' : fails[0][1], checks, face, headTop, eyeY, ankles, frameKind: F, vw, vh, dur, thumb: thumb ? URL.createObjectURL(thumb) : '', thumbBlob: thumb, light, reads, audio };
+}
+
+async function checkTake(s, stills) {
+  if (!(await imagesOK()) || !stills.length) return null;
+  const talk = s.framing === 'talk';
+  const prompt = `You are the on-set director checking one take for a self-filmed vertical video. The person filmed alone with a phone on a stand.
+Direction given: "${s.direction}"${talk && s.line ? `\nLine to say: "${s.line}"` : ''}
+Must be visible: "${s.mustSee || s.direction}"
+Craft intent for this shot: "${s.craft || ''}"
+The images are frames from the start, middle and end of the take.
+
+1. matches: does the take show what was asked, closely enough to use? Be lenient on small details and timing. Fail only for a wrong action, wrong place, missing person or object, or something blocking the lens. Ignore framing size, headroom, exposure and shake; those are measured separately.
+${talk ? '2. eye_contact: in the frames, is he looking into the lens (true) or at the screen, off to the side or down (false)?\n' : ''}3. craft: zero to two short notes, only where a frame clearly breaks the playbook below. Each under 12 words, specific to what you see. Skip anything already fine.
+
+PLAYBOOK (composition and craft):
+${PLAYBOOK_TEXT}
+
+Return ONLY JSON: {"matches":true,"seen":"what happens, under 10 words","fix":"if it does not match, one short spoken sentence telling him what to change"${talk ? ',"eye_contact":true' : ''},"craft":[]}
+Australian English, no exclamation marks, no em dashes.`;
+  const j = await ask(prompt, { images: stills.filter(Boolean), modelTier: 'quick' });
+  const clean = t => String(t || '').replace(/[—–]/g, ',').replace(/!/g, '.');
+  j.fix = clean(j.fix); j.craft = (j.craft || []).map(clean);
+  return j;
+}
+
+/* ---------------- AI director ---------------- */
+const summ = cs => (cs || []).filter(c => c.status !== 'neutral').map(c => `${c.label}: ${c.value}${c.status !== 'ok' ? ' (' + c.status + (c.note ? ', ' + c.note : '') + ')' : ''}`).join('; ');
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+async function directorLine(t, s, prev) {
+  if (!aiOn()) return null;
+  const pr = `You are Shane Wuerthner's on-set director, speaking through his phone speaker between takes. He films alone with the phone on a stand. Say what you would say right now: one or two short spoken sentences, 30 words at most.
+Lead with the single most important fix as a physical instruction (where to move, which way to tilt the phone, where to look, how long to hold). On a retake, first name what improved in a few words, using the numbers. Calm, direct and warm, like a ballet master in the studio. Australian English. No exclamation marks, no em dashes. Do not repeat the shot direction; it is read straight after you.
+Shot: ${s.title} (${s.framing}${s.textRoom ? ', needs room above his head for text' : ''}). Direction: ${s.direction}${s.line ? ' Line: ' + s.line : ''}
+Attempt ${t.attempt}. This take: ${summ(t.checks)}
+${prev && prev.checks ? 'Previous take: ' + summ(prev.checks) : ''}
+Return only the words to speak.`;
+  const txt = await withTimeout(aiText(pr, { modelTier: 'quick' }), 8000);
+  return cleanCopy(txt).replace(/^["'\s]+|["'\s]+$/g, '').slice(0, 280);
+}
+$('#askForm').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('#askIn').value.trim(); if (!q || !aiOn()) return;
+  $('#askIn').value = '';
+  const s = shot(), t = S.takes[s.id];
+  setLine('Thinking about that…', 'DIRECTOR', 'check');
+  try {
+    const a = await aiText(`You are the on-set director for Shane Wuerthner (Athletistry; former Principal Artist at Queensland Ballet, soloist with Vienna State Ballet and San Francisco Ballet), who is filming alone on his phone. Answer his question in one to three short spoken sentences, 50 words at most, practical and specific to this shot and room. Australian English, no exclamation marks, no em dashes.
+Current shot: ${s.title} (${s.framing}). Direction: ${s.direction}. Craft note: ${s.craft || 'none'}
+${t ? 'Last take: ' + summ(t.checks) : 'No take filmed yet.'}
+PLAYBOOK:
+${PLAYBOOK_TEXT}
+Question: ${q}`, { modelTier: 'default' });
+    speak(cleanCopy(a).trim(), 'DIRECTOR');
+  } catch (er) { setLine('I could not answer that just now. Try again in a moment.', 'DIRECTOR', 'fail'); }
+};
+
+/* ---------------- Live camera ---------------- */
+S.live = { on: false, facing: 'user' };
+const lc = document.createElement('canvas'); const lctx = lc.getContext('2d', { willReadFrequently: true });
+function grayFrom(cnv) {
+  sc.width = 64; sc.height = Math.max(8, Math.round(64 * cnv.height / cnv.width));
+  sctx.drawImage(cnv, 0, 0, sc.width, sc.height);
+  const d = sctx.getImageData(0, 0, sc.width, sc.height).data, g = new Float32Array(sc.width * sc.height);
+  for (let i = 0, p = 0; i < g.length; i++, p += 4) g[i] = .299 * d[p] + .587 * d[p + 1] + .114 * d[p + 2];
+  return g;
+}
+$('#bLive').onclick = () => S.live.on ? stopLive() : startLive();
+$('#bFlip').onclick = async () => { S.live.facing = S.live.facing === 'user' ? 'environment' : 'user'; await stopLive(true); startLive(); };
+$('#bRec').onclick = () => { if (S.live.state === 'recording') stopRecording(); else if (S.live.on) startCountdown(true); };
+async function startLive() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return liveBlocked();
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: S.live.facing, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: true });
+  } catch (e) { return liveBlocked(e); }
+  if (synth) synth.speak(new SpeechSynthesisUtterance(' '));
+  let analyser = null;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC();
+    const src = ac.createMediaStreamSource(stream); analyser = ac.createAnalyser(); analyser.fftSize = 1024; src.connect(analyser); S.live.ac = ac;
+  } catch (e) {}
+  Object.assign(S.live, { on: true, stream, analyser, state: 'framing', okSince: null, lastCue: {}, lastCueAt: 0, prevG: null, shakes: [] });
+  $('#bLive').textContent = 'Stop live'; $('#bFlip').classList.remove('hidden'); $('#bRec').classList.remove('hidden'); $('#bRec').textContent = 'Record now';
+  $('#checks').innerHTML = '';
+  mountLive();
+  await eye;
+  speak('Live. Get into position and I will frame you.', 'LIVE');
+  liveLoop();
+}
+function liveBlocked() {
+  setLine("The camera can't open here. Inside claude.ai the page isn't allowed to use it. Film on your phone and drop the take in, or open Shoot Director from your own site to use live mode.", 'DIRECTOR', 'fail');
+}
+function mountLive() {
+  if (!S.live.on) return;
+  const ph = $('#phone');
+  ph.className = 'phone live';
+  ph.style.setProperty('--mir', S.live.facing === 'user' ? 'scaleX(-1)' : 'none');
+  const s = shot();
+  ph.innerHTML = `<video id="lv" muted playsinline autoplay></video><canvas id="lcv"></canvas>
+    <div class="prompter ${s.framing === 'talk' && s.line ? '' : 'hidden'}" id="prompter">${esc(s.line || '')}</div>
+    <div class="rec hidden" id="recDot">REC <span id="recT">0.0</span></div><div class="count hidden" id="countN"></div>
+    <div class="verdict wait"><span id="liveMsg">framing</span><small id="liveTag">LIVE</small></div>`;
+  const v = ph.querySelector('video'); v.srcObject = S.live.stream; v.play().catch(() => {});
+  S.live.state = 'framing'; S.live.okSince = null; S.live.prevG = null; S.live.shakes = [];
+  // give him time to hear the direction and get into place before cues or auto-record
+  const words = wordsIn(s.direction) + wordsIn(s.line);
+  S.live.armAt = performance.now() + 3500 + words * 380;
+  S.live.lastCueAt = S.live.armAt - 2000;
+}
+async function stopLive(keepState) {
+  clearTimeout(S.live.timer);
+  if (S.live.rec && S.live.rec.state !== 'inactive') { S.live.discard = true; S.live.rec.stop(); }
+  if (S.live.stream) S.live.stream.getTracks().forEach(t => t.stop());
+  try { S.live.ac && S.live.ac.close(); } catch (e) {}
+  S.live.on = false; S.live.state = 'off';
+  $('#bLive').textContent = 'Go live'; $('#bFlip').classList.add('hidden'); $('#bRec').classList.add('hidden');
+  if (!keepState) { const t = S.takes[shot().id]; if (t) showTake(t); else resetCard(); }
+}
+function liveAudioLevel() {
+  const an = S.live.analyser; if (!an) return 0;
+  const d = new Float32Array(an.fftSize); an.getFloatTimeDomainData(d);
+  let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i]; return Math.sqrt(s / d.length);
+}
+async function liveLoop() {
+  if (!S.live.on) return;
+  const v = $('#lv');
+  if (!v || v.readyState < 2 || !v.videoWidth || ['checking', 'countdown-hold'].includes(S.live.state)) { S.live.timer = setTimeout(liveLoop, 200); return; }
+  const vw = v.videoWidth, vh = v.videoHeight, k = 320 / Math.max(vw, vh);
+  lc.width = Math.round(vw * k); lc.height = Math.round(vh * k);
+  lctx.drawImage(v, 0, 0, lc.width, lc.height);
+  let face = null, body = null;
+  if (human) {
+    try {
+      const r = await human.detect(lc);
+      const f = (r.face || []).filter(x => x.score > .45).sort((a, b) => b.score - a.score)[0];
+      if (f) face = { x: f.box[0] / lc.width, y: f.box[1] / lc.height, w: f.box[2] / lc.width, h: f.box[3] / lc.height };
+      const b = (r.body || []).filter(x => x.score > .3)[0];
+      if (b) { const kp = {}; b.keypoints.forEach(p => kp[p.part] = { x: p.position[0] / lc.width, y: p.position[1] / lc.height, s: p.score }); body = { box: { x: b.box[0] / lc.width, y: b.box[1] / lc.height, w: b.box[2] / lc.width, h: b.box[3] / lc.height }, kp }; }
+    } catch (e) {}
+  }
+  if (!S.live.on) return;
+  const g = grayFrom(lc);
+  const pb = body ? body.box : face ? { x: face.x - face.w, y: face.y - face.h * .5, w: face.w * 3, h: 1 } : null;
+  if (S.live.prevG && S.live.prevG.length === g.length) { S.live.shakes.push(shiftMag(S.live.prevG, g, sc.width, sc.height, pb)); if (S.live.shakes.length > 6) S.live.shakes.shift(); }
+  S.live.prevG = g;
+  const d = lctx.getImageData(0, 0, lc.width, lc.height).data;
+  const all = regionStats(d, lc.width, 0, 0, lc.width, lc.height);
+  const fs = face ? regionStats(d, lc.width, (face.x + face.w * .15) * lc.width, (face.y + face.h * .1) * lc.height, (face.x + face.w * .85) * lc.width, (face.y + face.h * .9) * lc.height) : null;
+  const m = { face, body, all, fs, shake: median(S.live.shakes) || 0, level: liveAudioLevel() };
+  const s = shot();
+  const a = liveAssess(s, m);
+  drawLive(a, m);
+  const now = performance.now();
+  if (S.live.state === 'framing') {
+    $('#liveMsg').textContent = a.issues.length ? a.issues[0].text : 'hold that';
+    $('#liveTag').textContent = a.headroom != null ? `HEADROOM ${a.headroom}%` : 'LIVE';
+    $('#phone .verdict').className = 'verdict ' + (a.issues.length ? 'no' : 'ok');
+    if (now < S.live.armAt) { $('#liveMsg').textContent = 'get into place'; S.live.okSince = null; }
+    else if (a.issues.length) {
+      S.live.okSince = null;
+      const top = a.issues[0];
+      if (now - S.live.lastCueAt > 2600 && (!S.live.lastCue[top.key] || now - S.live.lastCue[top.key] > 5000) && !(synth && synth.speaking)) {
+        S.live.lastCue[top.key] = now; S.live.lastCueAt = now; speak(top.cue, 'LIVE');
+      }
+    } else {
+      if (!S.live.okSince) { S.live.okSince = now; if (now - S.live.lastCueAt > 1500) { S.live.lastCueAt = now; speak('Good. Hold that.', 'LIVE', 'pass'); } }
+      else if (now - S.live.okSince > 1600 && $('#autoRec').checked) startCountdown(false);
+    }
+  } else if (S.live.state === 'recording') {
+    const el = (now - S.live.recStart) / 1000;
+    $('#recT').textContent = el.toFixed(1);
+    $('#liveMsg').textContent = a.issues.length ? a.issues[0].text : (s.framing === 'talk' ? 'talk to the lens' : 'keep going');
+    $('#phone .verdict').className = 'verdict ' + (a.issues.length ? 'no' : 'ok');
+    // auto stop
+    const isTalk = s.framing === 'talk';
+    if (isTalk) {
+      if (m.level > .02) { S.live.spoke = true; S.live.quietSince = null; }
+      else if (S.live.spoke) { S.live.quietSince = S.live.quietSince || now; if (now - S.live.quietSince > 1400 && el > s.minLen) stopRecording(); }
+      if (el > s.maxLen + 3) stopRecording();
+    } else {
+      const target = clamp((s.minLen + s.maxLen) / 2, s.minLen + 1, s.maxLen) + 1;
+      if (el > target) stopRecording();
+    }
+  }
+  S.live.timer = setTimeout(liveLoop, 120);
+}
+function liveAssess(s, m) {
+  const F = s.framing, issues = [];
+  const push = (key, cue, text) => issues.push({ key, cue, text });
+  const { face, body } = m;
+  let headTop = null;
+  if (face) headTop = Math.max(0, face.y - face.h * .32);
+  if (m.shake >= 1.5) push('shake', 'Hold the phone still. Put it on the stand.', 'camera moving');
+  if (F !== 'detail') {
+    if (!face && !body) push('none', "I can't see you. Step into frame.", 'step into frame');
+    else if (F === 'full') {
+      const ank = body ? [body.kp.leftAnkle, body.kp.rightAnkle].filter(p => p && p.s > .3 && p.y < .975) : [];
+      if (!ank.length) push('feet', 'Step back. I need to see your feet.', 'feet out of frame');
+      if (headTop != null && headTop < .02) push('head', 'Step back, your head is touching the top.', 'head cut off');
+    } else if (face) {
+      const lim = { close: [.12, .5], medium: [.04, .3], talk: [.09, .36] }[F] || [.04, .3];
+      if (face.h > lim[1]) push('tight', s.textRoom ? 'Step back. I need room above your head for text.' : 'Step back a little.', 'too tight');
+      else if (face.h < lim[0] && !(F === 'medium' && body && body.box.h > .45)) push('loose', 'Come closer to the phone.', 'too wide');
+      const need = s.textRoom ? .12 : .02;
+      if (headTop != null && headTop < need && face.h <= lim[1]) push('headroom', 'Tilt the phone down a touch.', 'no headroom');
+      const cx = face.x + face.w / 2;
+      if (cx < .26) push('left', 'Shift a step to your left.', 'off centre');
+      else if (cx > .74) push('right', 'Shift a step to your right.', 'off centre');
+    }
+    if (m.fs) {
+      if (m.fs.mean < .2) push('dark', 'Turn your face towards the light.', 'face too dark');
+      else if (m.all.mean - m.fs.mean > .2) push('backlit', 'The light is behind you. Turn to face the window.', 'backlit');
+    }
+  }
+  if (m.all.mean < .12) push('darkall', 'Too dark. Find more light.', 'too dark');
+  const order = ['none', 'shake', 'feet', 'head', 'tight', 'loose', 'headroom', 'left', 'right', 'dark', 'darkall', 'backlit'];
+  issues.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  return { issues, headroom: headTop != null ? Math.round(headTop * 100) : null, headTop };
+}
+function drawLive(a, m) {
+  const cv = $('#lcv'); if (!cv) return;
+  const W = cv.clientWidth, H = cv.clientHeight, dpr = devicePixelRatio || 1;
+  if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const ar = lc.width / lc.height, car = W / H; let sw, sh, ox, oy;
+  if (ar > car) { sh = H; sw = H * ar; ox = (W - sw) / 2; oy = 0; } else { sw = W; sh = W / ar; ox = 0; oy = (H - sh) / 2; }
+  const X = x => ox + x * sw, Y = y => oy + y * sh;
+  g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 1; g.beginPath();
+  [1 / 3, 2 / 3].forEach(f => { g.moveTo(W * f, 0); g.lineTo(W * f, H); g.moveTo(0, H * f); g.lineTo(W, H * f); }); g.stroke();
+  const bad = a.issues.length > 0;
+  if (m.face) { g.strokeStyle = bad ? 'rgba(234,111,95,.9)' : 'rgba(127,209,168,.9)'; g.lineWidth = 2; roundRect(g, X(m.face.x), Y(m.face.y), m.face.w * sw, m.face.h * sh, 10); g.stroke(); }
+  if (a.headTop != null) { const y = Y(a.headTop); g.strokeStyle = a.issues.some(i => /headroom|tight|head/.test(i.key)) ? '#ea6f5f' : '#7fd1a8'; g.lineWidth = 2; g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W / 2, y); g.moveTo(W / 2 - 8, y); g.lineTo(W / 2 + 8, y); g.stroke(); }
+  if (m.body) [m.body.kp.leftAnkle, m.body.kp.rightAnkle].forEach(p => { if (!p || p.s < .15) return; g.fillStyle = p.s > .3 && p.y < .975 ? '#7fd1a8' : '#ea6f5f'; g.beginPath(); g.arc(X(p.x), Math.min(H - 6, Y(p.y)), 5, 0, 7); g.fill(); });
+}
+async function startCountdown(manual) {
+  if (S.live.state !== 'framing') return;
+  S.live.state = 'countdown';
+  const s = shot();
+  if (synth) synth.cancel();
+  setLine(manual ? 'Recording in three.' : "That's the frame. Recording in three.", 'LIVE', 'pass');
+  const cn = $('#countN');
+  if (S.voice && synth) { const u = new SpeechSynthesisUtterance(manual ? 'Three, two, one.' : "That's the frame. Three, two, one."); if (voice) { u.voice = voice; u.lang = voice.lang; } synth.speak(u); }
+  for (const n of [3, 2, 1]) { if (!S.live.on || S.live.state !== 'countdown') return; if (cn) { cn.textContent = n; cn.classList.remove('hidden'); } await new Promise(r => setTimeout(r, manual ? 800 : 900)); }
+  if (cn) cn.classList.add('hidden');
+  if (!S.live.on) return;
+  if (synth) synth.cancel();
+  startRecording(s);
+}
+function startRecording(s) {
+  const types = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  const mime = types.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '';
+  const rec = new MediaRecorder(S.live.stream, mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : {});
+  const chunks = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    if (S.live.discard) { S.live.discard = false; return; }
+    const type = rec.mimeType || mime || 'video/webm';
+    const ext = /mp4/.test(type) ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type });
+    const file = new File([blob], `take-${Date.now()}.${ext}`, { type });
+    S.live.state = 'checking';
+    handleTake(file, { dur: (performance.now() - S.live.recStart) / 1000 }).then(() => { if (S.live.on && S.live.state === 'checking' && S.live.lastHandled !== S.idx) {} });
+  };
+  S.live.rec = rec; S.live.spoke = false; S.live.quietSince = null;
+  rec.start(250);
+  S.live.recStart = performance.now(); S.live.state = 'recording';
+  $('#recDot').classList.remove('hidden'); $('#bRec').textContent = 'Stop';
+  setLine(s.framing === 'talk' ? (s.line ? 'Rolling. Say your line to the lens.' : 'Rolling. Talk to the lens.') : 'Rolling. ' + s.direction, 'RECORDING', 'speak');
+}
+function stopRecording() {
+  if (S.live.rec && S.live.rec.state === 'recording') { S.live.rec.stop(); }
+  $('#bRec').textContent = 'Record now';
+}
+
+/* ---------------- Voice profile & script writer ---------------- */
+const VOICE_DEFAULT = {
+  source: 'Built from your Auckland workshop transcript (about 36,000 of your words)',
+  wps: 2.6,
+  profile: `HOW SHANE SOUNDS
+A studio teacher talking to a room: warm, direct, unhurried. Explains the why before the what, then gives a plain instruction.
+
+RHYTHM
+- Short spoken units. Explanations run as chains of cause and effect: "if this, then that, and then you're going to..."
+- Checks in after a point with a tag: "Right?", "Yeah?", "Okay?", "Does that make sense?" In a 30 second script, use one or two, never one per line.
+- Starts explanations with "So," pivots with "Now," and sets up hypotheticals with "Let's say..."
+- Candid answers start with "Look,". Uses "generally", "a little bit", "basically", "obviously", "for example".
+
+TEACHING MOVES (use these to build scripts)
+1. Name the correction or belief everyone has heard ("point your feet, stretch your knees, lift your legs, turn out").
+2. Explain what is actually happening in the body: name the muscle, then say what it does in plain words (quadriceps fighting to stretch, hamstring fighting to bend).
+3. Give a feel-it test the viewer can do now: "put your hand right here... feel that work".
+4. Make the stakes concrete with simple maths: one count early, 400 times a term, four terms, 1,600 a year, 16,000 over ten years.
+5. Compare two dancers over time: who has the stronger développé, the one who held it or the one who didn't?
+6. Use everyday comparisons: walking down the street with opposite arm to leg, closing a car door with your bottom, being stuck between two panes of glass, the roast cut to fit a small pan.
+7. Land on one plain instruction and why it matters: "So hold your leg until the end. It makes a big difference over time."
+
+BELIEFS THAT SHOW UP UNPROMPTED
+- Understanding beats repeating: otherwise you are passing on what another teacher said, and maybe they were wrong.
+- You have to make mistakes, even fail, to improve.
+- Strength work alongside dance, in parallel, keeps dancers healthy; ballet alone builds imbalances.
+
+WORDS
+Ballet terms in French, said plainly. Anatomy named, then explained. Australian: term four, school holidays. Says "guys" to the room; in scripts say "you".
+
+AVOID
+Hype and guru phrasing ("here's the thing", "let that sink in", "game changer", "unlock"), exclamation marks, em dashes, the word "transform", and filler ("um", "like") on camera.
+
+LINES THAT SOUND MOST LIKE HIM
+- "Does that make sense?"
+- "So hold your leg until the end. It makes a big difference over time."
+- "You actually have to make mistakes and sometimes even fail in order to improve."
+- "It's not because we need you to whip your head around."
+- "Imagine there's a car door behind you. You want to close the car door with your bottom."`
+};
+const BRAND_RULES = `Brand and copy rules (always): Australian English. No em dashes. No exclamation marks. Never the word "transform". Every line must pass three tests: you can picture it, it can be proven true or false, and nobody but Shane could say it. Generic motivational lines fail. Verdict-driven: say what is true and what to do. Anchor beliefs he uses: "Method is taste. Anatomy is law." "Technique is the vehicle. Artistry is the journey." "Train for clean. Dance for human." "Standards are kindness."
+Shane: founder of Athletistry, the practice of moving well; former Principal Artist at Queensland Ballet, soloist with Vienna State Ballet (7 years) and San Francisco Ballet; personal trainer; 30 years in dance. Community: The Athletistry Project on Skool.`;
+let VP = (() => { try { return JSON.parse(localStorage.getItem('sd-voice')) || VOICE_DEFAULT; } catch (e) { return VOICE_DEFAULT; } })();
+function saveVoice() { try { localStorage.setItem('sd-voice', JSON.stringify(VP)); } catch (e) {} renderVoice(); }
+function renderVoice() {
+  $('#voiceState').textContent = `${VP.source}. Pace: about ${Math.round(VP.wps * 60)} words a minute.`;
+  $('#vpView').value = VP.profile;
+  $('#vpWps').value = Math.round(VP.wps * 60);
+}
+function parseTranscript(name, text) {
+  // subtitle files give timing for pace
+  let words = 0, secs = 0;
+  const cues = [...text.matchAll(/(\d{1,2}:)?(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{1,2}:)?(\d{2}):(\d{2})[.,](\d{3})([\s\S]*?)(?=\n\s*\n|$)/g)];
+  const toS = (h, m, s, ms) => (parseInt(h || '0') * 3600) + parseInt(m) * 60 + parseInt(s) + parseInt(ms) / 1000;
+  let plain = text;
+  if (cues.length) {
+    plain = cues.map(c => c[9].replace(/<[^>]+>/g, '').trim()).join(' ');
+    cues.forEach(c => { const a = toS(c[1] && c[1].slice(0, -1), c[2], c[3], c[4]), b = toS(c[5] && c[5].slice(0, -1), c[6], c[7], c[8]); const w = c[9].split(/\s+/).filter(Boolean).length; if (b > a && w) { secs += b - a; words += w; } });
+  }
+  return { name, plain, wps: secs > 30 ? words / secs : null };
+}
+async function readFiles(list) {
+  const out = [];
+  for (const f of list) out.push(parseTranscript(f.name, await f.text()));
+  return out;
+}
+function sampleText(t, max) {
+  if (t.length <= max) return t;
+  const part = Math.floor(max / 4), out = [];
+  for (let i = 0; i < 4; i++) { const st = Math.floor((t.length - part) * i / 3); out.push(t.slice(st, st + part)); }
+  return out.join('\n[...]\n');
+}
+$('#bLearn').onclick = async () => {
+  const files = await readFiles($('#vtFiles').files);
+  const pasted = $('#vtPaste').value.trim();
+  if (pasted) files.push(parseTranscript('pasted', pasted));
+  if (!files.length) { toast('Paste a transcript or choose a file first'); return; }
+  const btn = $('#bLearn'); btn.disabled = true; $('#voiceState').textContent = 'Reading how you speak…';
+  const timed = files.filter(f => f.wps);
+  const corpus = sampleText(files.map(f => `# ${f.name}\n${f.plain}`).join('\n\n'), 60000);
+  try {
+    const txt = await aiText(`Below are transcripts of Shane Wuerthner speaking (teaching, workshops, talks). Some lines may be other speakers; only learn from Shane, the main teacher.
+Update his speaking-voice profile so a scriptwriter can write lines he would naturally say. Keep everything in the current profile that the new transcripts still support, add what is new, and fix anything they contradict. Use the same section headings. Quote short lines (under 20 words) verbatim only in the final section. Be specific: real phrases, real teaching moves, real examples he uses. No em dashes.
+
+CURRENT PROFILE:
+${VP.profile}
+
+NEW TRANSCRIPTS:
+${corpus}
+
+Return only the updated profile text.`, { modelTier: 'complex' });
+    const wps = timed.length ? timed.reduce((a, f) => a + f.wps, 0) / timed.length : VP.wps;
+    VP = { source: `${VP.source}, plus ${files.map(f => f.name).join(', ')}`, wps: clamp(wps, 1.6, 3.8), profile: txt.replace(/—/g, ',').trim() };
+    saveVoice(); toast('Voice profile updated');
+    $('#vtPaste').value = ''; $('#vtFiles').value = '';
+  } catch (e) { $('#voiceState').textContent = 'Could not read that just now. Try again.'; }
+  btn.disabled = false;
+};
+$('#vpView').addEventListener('change', e => { VP.profile = e.target.value; saveVoice(); });
+$('#vpWps').addEventListener('change', e => { VP.wps = clamp(+e.target.value / 60 || 2.6, 1.6, 3.8); saveVoice(); });
+$('#bVoiceReset').onclick = () => { VP = VOICE_DEFAULT; saveVoice(); toast('Back to the workshop profile'); };
+$('#bVoiceCopy').onclick = async () => { try { await navigator.clipboard.writeText(VP.profile); toast('Profile copied'); } catch (e) { $('#vpView').select(); toast('Select and copy'); } };
+
+let SC = (() => { try { return JSON.parse(localStorage.getItem('sd-script')); } catch (e) { return null; } })();
+const saveScript = () => { try { localStorage.setItem('sd-script', JSON.stringify(SC)); } catch (e) {} };
+const wordsIn = t => String(t || '').split(/\s+/).filter(Boolean).length;
+const fmtT = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+$('#bWrite').onclick = () => writeScript();
+async function writeScript(mode = 'new') {
+  const story = $('#scStory').value.trim();
+  if (mode === 'new' && !story) { $('#scStory').focus(); toast('Give me the story first'); return; }
+  if (!aiOn()) { toast('Script writing needs Claude'); return; }
+  const secs = +$('#scLen').value, fmtv = $('#scFormat').value, type = $('#scType').value, cta = $('#scCta').value.trim();
+  const words = Math.round(secs * VP.wps);
+  const btn = $('#bWrite'); btn.disabled = true; $('#scStatus').textContent = mode === 'new' ? 'Writing your script…' : 'Rewriting…';
+  const FORMAT = { talk: 'Talking to camera the whole way, with jump cuts and occasional cutaways.', vo: 'Voiceover over b-roll; every beat is a b-roll shot he films, with the line as voiceover.', mixed: 'Talking to camera for the hook and key claims, b-roll cutaways under the explanation and test.' }[fmtv];
+  const base = mode === 'new' ? `STORY / IDEA FROM SHANE:\n${story}` : `CURRENT SCRIPT (JSON):\n${JSON.stringify(SC.data)}\nREWRITE INSTRUCTION: ${mode}`;
+  const prompt = `You write short-form video scripts for Shane Wuerthner, built for maximum retention and written in his natural speaking voice. Every line must sound like something he would actually say in a studio, not like marketing copy.
+
+${base}
+
+FORMAT: ${FORMAT}
+TARGET LENGTH: ${secs} seconds, which is about ${words} spoken words at his pace (${Math.round(VP.wps * 60)} words a minute). Stay within 10% of that.
+CONTENT STRATEGY: ${STRATEGY[type]}
+${cta ? 'CALL TO ACTION: ' + cta : 'CALL TO ACTION: fit the content strategy.'}
+
+RETENTION STRUCTURE
+- Hook, 0 to 2 seconds: 15 words or fewer, no self-introduction, states the tension, the mistake or the result. Write three different hooks using different hook types (counterintuitive claim, named mistake, concrete number or result, direct question to a specific viewer).
+- Within the next few seconds, make the stakes concrete for the viewer (his simple maths, a cost over time, a test they can fail).
+- Then beats. Each beat is one or two sentences and about 1.5 to 3.5 seconds of speech, with a visual change on every beat (new shot size, angle, cutaway, demonstration or on-screen text). Vary the type of change.
+- Include an open loop early that is paid off near the end.
+- Payoff, then the call to action in his own words. End on a line that can loop back to the hook if possible.
+- On-screen text: 8 words or fewer per beat, not a copy of the spoken line.
+
+HIS VOICE (follow closely):
+${VP.profile}
+
+${BRAND_RULES}
+
+PLAYBOOK FOR SHOTS:
+${PLAYBOOK_TEXT}
+
+Return ONLY JSON:
+{"title":"2 to 5 words","hooks":[{"say":"...","on_screen":"...","type":"..."}],"beats":[{"say":"...","on_screen":"...","shot":{"framing":"talk|close|medium|full|detail","direction":"what he films, one sentence"},"device":"the retention device this beat uses, 2 to 5 words"}],"cta":{"say":"...","on_screen":"..."},"caption":"under 50 words","why_it_holds":"one sentence on the retention logic"}`;
+  try {
+    const j = await ask(prompt, { modelTier: 'complex' });
+    const cl = o => { if (typeof o === 'string') return cleanCopy(o); if (Array.isArray(o)) return o.map(cl); if (o && typeof o === 'object') { const r = {}; for (const k in o) r[k] = cl(o[k]); return r; } return o; };
+    SC = { data: cl(j), hook: 0, secs, fmt: fmtv, type, story: story || (SC && SC.story) };
+    saveScript(); renderScript(); $('#scStatus').textContent = '';
+  } catch (e) { $('#scStatus').textContent = e && e.code === 'rate_limited' ? 'Too many requests. Try again in a minute.' : 'Could not write that one. Try again.'; }
+  btn.disabled = false;
+}
+function scriptLines() {
+  const d = SC.data, h = d.hooks[SC.hook] || d.hooks[0];
+  return [{ kind: 'HOOK', say: h.say, on_screen: h.on_screen, shot: { framing: SC.fmt === 'vo' ? 'close' : 'talk', direction: 'Open on the lens, already mid-thought.' }, device: h.type }]
+    .concat(d.beats.map(b => ({ kind: 'BEAT', ...b })))
+    .concat([{ kind: 'CTA', say: d.cta.say, on_screen: d.cta.on_screen, shot: { framing: SC.fmt === 'vo' ? 'medium' : 'talk', direction: 'Back to the lens for the call to action.' }, device: 'call to action' }]);
+}
+function renderScript() {
+  if (!SC) return;
+  const d = SC.data; $('#scriptOut').classList.remove('hidden');
+  $('#scTitle').textContent = d.title || 'Script';
+  $('#scHooks').innerHTML = d.hooks.map((h, i) => `<div class="hook ${i === SC.hook ? 'on' : ''}" data-i="${i}"><span class="mono" style="color:var(--gold);min-width:20px">${i + 1}</span><div><div class="say">${esc(h.say)}</div><div class="muted" style="font-size:12.5px;margin-top:3px">${esc(h.type || '')} · text: ${esc(h.on_screen || '')} · ${wordsIn(h.say)} words${wordsIn(h.say) > 15 ? ' <span style="color:var(--warn)">(over 15)</span>' : ''}</div></div></div>`).join('');
+  $('#scHooks').querySelectorAll('.hook').forEach(el => el.onclick = () => { SC.hook = +el.dataset.i; saveScript(); renderScript(); });
+  let t = 0; const L = scriptLines(); let total = 0;
+  $('#scBeats').innerHTML = L.map((b, i) => {
+    const w = wordsIn(b.say), dur = w / VP.wps, st = t; t += dur; total += w;
+    const warn = dur > 4 ? `<div class="warn">${dur.toFixed(1)}s on one shot. Split it or add a cutaway.</div>` : '';
+    return `<div class="beat"><div class="tm">${fmtT(st)}<br><span class="muted">${b.kind}</span></div><div>
+      <div class="say" contenteditable="true" data-i="${i}">${esc(b.say)}</div>
+      <div class="meta">${b.on_screen ? 'Text: ' + esc(b.on_screen) + ' · ' : ''}${esc(b.shot && b.shot.framing || '')}: ${esc(b.shot && b.shot.direction || '')}${b.device ? ' · ' + esc(b.device) : ''}</div>${warn}</div></div>`;
+  }).join('');
+  $('#scBeats').querySelectorAll('.say[data-i]').forEach(el => el.addEventListener('blur', () => {
+    const i = +el.dataset.i, v = cleanCopy(el.textContent.trim());
+    if (i === 0) d.hooks[SC.hook].say = v; else if (i === L.length - 1) d.cta.say = v; else d.beats[i - 1].say = v;
+    saveScript(); renderScript();
+  }));
+  const est = total / VP.wps;
+  const off = Math.abs(est - SC.secs) / SC.secs;
+  $('#scStats').innerHTML = `About <b>${Math.round(est)} seconds</b> at your pace (target ${SC.secs}) · ${total} words · ${L.length} visual changes, one every ${(est / L.length).toFixed(1)}s${off > .15 ? ` · <span style="color:var(--warn)">${est > SC.secs ? 'long' : 'short'} for the target</span>` : ''}`;
+  $('#scWhy').textContent = d.why_it_holds || '';
+  $('#scCaption').textContent = d.caption || '';
+}
+function scriptText() {
+  const L = scriptLines(); let t = 0;
+  return [`${SC.data.title}`, ''].concat(L.map(b => { const st = t; t += wordsIn(b.say) / VP.wps; return `[${fmtT(st)}] ${b.kind}\nSAY: ${b.say}\n${b.on_screen ? 'TEXT: ' + b.on_screen + '\n' : ''}SHOT: ${b.shot ? b.shot.framing + ', ' + b.shot.direction : ''}\n`; }), ['CAPTION: ' + (SC.data.caption || '')]).join('\n');
+}
+$('#bScCopy').onclick = async () => { try { await navigator.clipboard.writeText(scriptText()); toast('Script copied'); } catch (e) { const b = $('#scCopyBox'); b.value = scriptText(); b.classList.remove('hidden'); b.select(); } };
+$('#bScRead').onclick = () => { if (!synth) return; synth.cancel(); scriptLines().forEach(b => { const u = new SpeechSynthesisUtterance(b.say); if (voice) { u.voice = voice; u.lang = voice.lang; } u.rate = clamp(VP.wps / 2.6, .8, 1.3); synth.speak(u); }); };
+$('#bScTighter').onclick = () => writeScript('Tighten it by about 20 percent. Keep the hook, the stakes and his voice; cut repetition and soft lines.');
+$('#bScWarmer').onclick = () => writeScript('Make it sound more like him talking in the studio: more of his teaching moves (the feel-it test, the simple maths, an everyday comparison) and his natural check-ins, without adding length.');
+$('#bScShoot').onclick = () => {
+  const L = scriptLines(), n = L.length;
+  const acts = ['Hook', 'Build', 'Payoff'];
+  const actOf = i => i === 0 ? 0 : i >= n - 2 ? 2 : 1;
+  const shots = L.map((b, i) => {
+    const w = wordsIn(b.say), dur = w / VP.wps;
+    const framing = ['talk', 'close', 'medium', 'full', 'detail'].includes(b.shot && b.shot.framing) ? b.shot.framing : 'talk';
+    const talk = framing === 'talk';
+    return {
+      act: actOf(i), title: b.kind === 'HOOK' ? 'The hook' : b.kind === 'CTA' ? 'Call to action' : `Beat ${i}`,
+      direction: (b.shot && b.shot.direction) || 'Say the line to the lens.',
+      framing, textRoom: talk || !!b.on_screen, minLen: Math.max(2, Math.round(talk ? dur : Math.max(3, dur))), maxLen: Math.max(5, Math.round(dur * 2 + 3)),
+      mood: 'steady', line: talk ? b.say : '', craft: b.device ? 'Retention: ' + b.device : '', mustSee: (b.shot && b.shot.direction) || ''
+    };
+  });
+  S.plan = normalisePlan({ title: SC.data.title, acts, shots });
+  savePlan(); setView('plan'); renderPlan();
+  toast('Shot list built from your script');
+};
+
+/* ---------------- Views ---------------- */
+function setView(v) {
+  if (v === 'shoot' && !S.plan) return;
+  show(v);
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  if (v !== 'shoot' && S.live.on) stopLive(true);
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { if (b.dataset.v === 'shoot' && !S.t0) return; setView(b.dataset.v); if (b.dataset.v === 'shoot') goTo(S.idx, false); });
+renderVoice(); if (SC) { renderScript(); }
+
+/* ---------------- Finish & export ---------------- */
+const slug = s => String(s).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'shot';
+function fileList() {
+  const p = S.plan; let n = 0;
+  return p.shots.map((s, i) => {
+    const t = S.saved[s.id];
+    if (!t) return null;
+    n++;
+    const ext = (t.file.name.match(/\.[a-z0-9]+$/i) || ['.mp4'])[0].toLowerCase();
+    return { n, s, t, name: `${String(n).padStart(2, '0')}_${slug(p.acts[s.act])}_${slug(s.title)}${ext}` };
+  }).filter(Boolean);
+}
+function shotListText() {
+  const p = S.plan, L = fileList();
+  const lines = [`${p.title.toUpperCase()}  shot list`, `${L.length} of ${p.shots.length} shots captured`, ''];
+  p.acts.forEach((a, ai) => {
+    lines.push(a.toUpperCase());
+    p.shots.filter(s => s.act === ai).forEach(s => {
+      const f = L.find(x => x.s === s);
+      lines.push(f ? `  ${f.name}  ${f.t.dur.toFixed(1)}s  ${f.t.reads || ''}${f.t.overridden ? '  (kept despite checks)' : ''}` : `  MISSING  ${s.title}`);
+      lines.push(`     ${s.direction}`);
+      if (s.framing === 'talk' && s.line) lines.push(`     Line: ${s.line}`);
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+function finish() {
+  clearInterval(S.timer);
+  if (S.live.on) stopLive(true);
+  show('done');
+  const L = fileList();
+  const total = L.reduce((a, f) => a + f.t.dur, 0);
+  const mins = Math.round((Date.now() - S.t0) / 60000);
+  $('#doneSummary').textContent = `${L.length} of ${S.plan.shots.length} shots, ${total.toFixed(0)} seconds of usable footage, filmed in ${mins} minute${mins === 1 ? '' : 's'}. Named in story order and grouped by act.`;
+  $('#files').innerHTML = L.map(f => `<div class="file"><img src="${f.t.thumb}" alt=""><div><div class="fn">${esc(f.name)}</div><div class="muted" style="font-size:12.5px">${esc(S.plan.acts[f.s.act])} · ${f.t.dur.toFixed(1)}s · ${esc(f.t.light || '')}</div></div><span class="tag" style="color:${ACT_C[f.s.act]}">${esc(S.plan.acts[f.s.act])}</span></div>`).join('');
+  $('#bZip').classList.toggle('hidden', !L.length);
+  $('#zipStatus').textContent = '';
+  speak("Done. Everything's organised. Your footage is ready.", 'DIRECTOR', 'pass');
+}
+$('#bBackToShoot').onclick = () => { show('shoot'); goTo(S.idx, false); };
+$('#bNew').onclick = () => { show('plan'); $('#clock').classList.add('hidden'); $('#dots').innerHTML = ''; };
+$('#bCopy').onclick = async () => {
+  const txt = shotListText(); const b = $('#copyBox'); b.value = txt;
+  try { await navigator.clipboard.writeText(txt); toast('Shot list copied'); b.classList.add('hidden'); }
+  catch (e) { b.classList.remove('hidden'); b.select(); toast('Select and copy below'); }
+};
+
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+async function crcBlob(b, onp) {
+  let c = 0xFFFFFFFF; const CH = 8 << 20;
+  for (let o = 0; o < b.size; o += CH) {
+    const u = new Uint8Array(await b.slice(o, o + CH).arrayBuffer());
+    for (let i = 0; i < u.length; i++) c = CRC_T[(c ^ u[i]) & 255] ^ (c >>> 8);
+    onp && onp(u.length);
+  }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+async function makeZip(entries, onp) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let off = 0, cdSize = 0;
+  for (const e of entries) {
+    const nb = enc.encode(e.name), size = e.blob.size, crc = await crcBlob(e.blob, onp);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+    lh.setUint16(26, nb.length, true); lh.setUint16(28, 0, true);
+    parts.push(lh.buffer, nb, e.blob);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, time, true); ch.setUint16(14, date, true); ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+    ch.setUint16(28, nb.length, true); ch.setUint32(42, off, true);
+    central.push(ch.buffer, nb); cdSize += 46 + nb.length;
+    off += 30 + nb.length + size;
+  }
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
+}
+$('#bZip').onclick = async () => {
+  const L = fileList(); if (!L.length) return;
+  const btn = $('#bZip'); btn.disabled = true;
+  const prog = $('#zipProg'); prog.classList.remove('hidden');
+  try {
+    const entries = L.map(f => ({ name: `${slug(S.plan.title)}/${slug(S.plan.acts[f.s.act])}/${f.name}`, blob: f.t.file }));
+    entries.push({ name: `${slug(S.plan.title)}/shot-list.txt`, blob: new Blob([shotListText()]) });
+    const total = entries.reduce((a, e) => a + e.blob.size, 0);
+    if (total > 3.9e9) throw { message: 'Over 3.9 GB. Download one act at a time by removing takes, or trim the longest clips first.' };
+    let doneB = 0;
+    $('#zipStatus').textContent = 'Packing your footage…';
+    const zip = await makeZip(entries, n => { doneB += n; prog.firstElementChild.style.width = Math.round(100 * doneB / total) + '%'; });
+    $('#zipStatus').textContent = 'Confirm the download.';
+    const fname = `${slug(S.plan.title)}-footage.zip`;
+    if (S.downloads) await S.downloads.save({ filename: fname, data: zip });
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(zip); a.download = fname; document.body.appendChild(a); a.click(); a.remove(); }
+    $('#zipStatus').textContent = 'Saved. Unzip it and drop the act folders straight into your editor.';
+  } catch (e) {
+    $('#zipStatus').textContent = e && e.code === 'declined' ? 'Download cancelled.' : e && e.code === 'rate_limited' ? 'A download prompt is already open.' : 'Could not save: ' + (e && e.message || e);
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>
