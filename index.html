@@ -153,6 +153,14 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
 .rec{position:absolute;top:10px;right:10px;background:rgba(234,111,95,.92);color:#fff;font:600 11px var(--mono);letter-spacing:.1em;border-radius:999px;padding:4px 9px}
 .prompter{position:absolute;left:8px;right:8px;top:8px;background:rgba(10,20,22,.72);color:#fff;font-family:var(--serif);font-size:20px;line-height:1.2;padding:8px 10px;border-radius:12px;text-align:center}
 .count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:120px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.5);pointer-events:none}
+.libitem{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.libitem:first-child{border-top:0}
+.libitem .hk{font-family:var(--serif);font-size:18px;line-height:1.25;margin-top:4px}
+.libitem .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.libitem .btn{padding:6px 12px;font-size:13px}
+.tag.filmed{color:var(--good);border-color:var(--good)}
+.tag.tofilm{color:var(--gold);border-color:var(--gold)}
+@media(max-width:700px){.libitem{grid-template-columns:1fr}.libitem .acts{justify-content:flex-start}}
 .beat{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .beat .tm{font-family:var(--mono);font-size:12px;color:var(--gold)}
 .beat .say{font-family:var(--serif);font-size:21px;line-height:1.25;outline:none}
@@ -178,6 +186,15 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
   <section id="vScript" class="plan hidden">
     <h1>Write it the way you talk.</h1>
     <p class="lede">Give me the story. I'll write a script built to hold attention: a hook in the first two seconds, stakes, a visual change every few seconds, an open loop, the payoff and your call to action. It's written in your speaking voice and timed to your pace.</p>
+    <div class="card" id="libCard" style="margin-bottom:16px">
+      <div class="row" style="justify-content:space-between">
+        <span class="mono">Saved scripts <span class="muted" id="libCount"></span></span>
+        <div class="row"><button class="btn ghost" id="bLibExport">Copy to another device</button><button class="btn ghost" id="bLibImport">Paste from another device</button></div>
+      </div>
+      <div id="libList" style="margin-top:6px"></div>
+      <textarea class="copy hidden" id="libBox" placeholder="Paste the code you copied on your other device"></textarea>
+      <div class="row hidden" id="libImpRow" style="margin-top:8px"><button class="btn primary" id="bLibImpGo">Add these scripts</button></div>
+    </div>
     <div class="grid2" style="align-items:start">
       <div class="card form">
         <label><span class="mono muted">The story</span>
@@ -210,7 +227,7 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
     </div>
     <div id="scriptOut" class="card hidden" style="margin-top:16px">
       <div class="row" style="justify-content:space-between"><h2 style="font-family:var(--serif);font-size:30px;margin:0" id="scTitle"></h2>
-        <div class="row"><button class="btn primary" id="bScShoot">Turn into a shoot</button><button class="btn" id="bScRead">Read it aloud</button><button class="btn" id="bScCopy">Copy</button></div></div>
+        <div class="row"><button class="btn" id="bScSave">Save for later</button><button class="btn primary" id="bScShoot">Turn into a shoot</button><button class="btn" id="bScRead">Read it aloud</button><button class="btn" id="bScCopy">Copy</button></div></div>
       <p class="muted" style="font-size:13.5px;margin:6px 0 0" id="scStats"></p>
       <div class="mono muted" style="margin-top:16px">Pick your hook</div>
       <div id="scHooks"></div>
@@ -1539,7 +1556,72 @@ $('#bVoiceReset').onclick = () => { VP = VOICE_DEFAULT; saveVoice(); toast('Back
 $('#bVoiceCopy').onclick = async () => { try { await navigator.clipboard.writeText(VP.profile); toast('Profile copied'); } catch (e) { $('#vpView').select(); toast('Select and copy'); } };
 
 let SC = (() => { try { return JSON.parse(localStorage.getItem('sd-script')); } catch (e) { return null; } })();
-const saveScript = () => { try { localStorage.setItem('sd-script', JSON.stringify(SC)); } catch (e) {} };
+let LIB = (() => { try { return JSON.parse(localStorage.getItem('sd-library')) || []; } catch (e) { return []; } })();
+const FMT_NAME = { talk: 'talking to camera', vo: 'voiceover', mixed: 'talking plus b-roll' };
+function persistLib() { try { localStorage.setItem('sd-library', JSON.stringify(LIB)); } catch (e) { toast('This device is out of space for saved scripts'); } renderLib(); }
+const libItem = id => id && LIB.find(x => x.id === id);
+const saveScript = () => {
+  try { localStorage.setItem('sd-script', JSON.stringify(SC)); } catch (e) {}
+  const it = SC && libItem(SC.id);
+  if (it) { Object.assign(it, { title: SC.data.title || it.title, data: SC.data, hook: SC.hook, updatedAt: Date.now() }); persistLib(); }
+};
+function saveForLater() {
+  if (!SC) return;
+  let it = libItem(SC.id);
+  if (!it) { SC.id = 's' + Date.now().toString(36); it = { id: SC.id, savedAt: Date.now(), status: 'tofilm' }; LIB.unshift(it); }
+  Object.assign(it, { title: SC.data.title || 'Script', story: SC.story || '', secs: SC.secs, fmt: SC.fmt, type: SC.type, data: SC.data, hook: SC.hook, updatedAt: Date.now() });
+  try { localStorage.setItem('sd-script', JSON.stringify(SC)); } catch (e) {}
+  persistLib(); renderScript(); toast('Saved for later');
+}
+function openSaved(id) {
+  const it = libItem(id); if (!it) return;
+  SC = { id: it.id, data: it.data, hook: it.hook || 0, secs: it.secs, fmt: it.fmt, type: it.type, story: it.story };
+  $('#scStory').value = it.story || ''; $('#scLen').value = String(it.secs); $('#scFormat').value = it.fmt; $('#scType').value = it.type;
+  try { localStorage.setItem('sd-script', JSON.stringify(SC)); } catch (e) {}
+  renderScript();
+}
+function renderLib() {
+  $('#libCount').textContent = LIB.length ? `(${LIB.length})` : '';
+  if (!LIB.length) { $('#libList').innerHTML = '<p class="muted" style="margin:6px 0 0;font-size:13.5px">Scripts you save land here, ready to film whenever you are.</p>'; return; }
+  const day = t => new Date(t).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  const sorted = LIB.slice().sort((a, b) => (a.status === 'filmed') - (b.status === 'filmed') || b.savedAt - a.savedAt);
+  $('#libList').innerHTML = sorted.map(it => {
+    const h = (it.data.hooks || [])[it.hook || 0] || {};
+    return `<div class="libitem" data-id="${esc(it.id)}"><div>
+      <div><b>${esc(it.title)}</b> <span class="tag ${it.status}">${it.status === 'filmed' ? 'filmed' : 'to film'}</span></div>
+      <div class="muted" style="font-size:12.5px">${it.secs}s · ${esc(FMT_NAME[it.fmt] || '')} · saved ${day(it.savedAt)}</div>
+      <div class="hk">${esc(h.say || '')}</div></div>
+      <div class="acts"><button class="btn" data-a="open">Open</button><button class="btn primary" data-a="film">Film it</button><button class="btn ghost" data-a="mark">${it.status === 'filmed' ? 'Mark to film' : 'Mark filmed'}</button><button class="btn ghost" data-a="del">Delete</button></div></div>`;
+  }).join('');
+  $('#libList').querySelectorAll('.libitem').forEach(row => row.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const id = row.dataset.id, it = libItem(id), a = b.dataset.a;
+    if (a === 'open') { openSaved(id); $('#scriptOut').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    else if (a === 'film') { openSaved(id); $('#bScShoot').click(); }
+    else if (a === 'mark') { it.status = it.status === 'filmed' ? 'tofilm' : 'filmed'; persistLib(); }
+    else if (a === 'del') {
+      if (b.dataset.armed) { LIB = LIB.filter(x => x.id !== id); if (SC && SC.id === id) delete SC.id; persistLib(); if (SC) renderScript(); toast('Deleted'); }
+      else { b.dataset.armed = '1'; b.textContent = 'Tap again to delete'; setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = 'Delete'; } }, 3000); }
+    }
+  }));
+}
+$('#bScSave').onclick = saveForLater;
+$('#bLibExport').onclick = async () => {
+  if (!LIB.length) { toast('No saved scripts yet'); return; }
+  const code = 'SDLIB:' + btoa(unescape(encodeURIComponent(JSON.stringify(LIB))));
+  try { await navigator.clipboard.writeText(code); toast(`Copied ${LIB.length} script${LIB.length === 1 ? '' : 's'}. Paste on your other device.`); }
+  catch (e) { const b = $('#libBox'); b.value = code; b.classList.remove('hidden'); b.select(); toast('Select and copy the code below'); }
+};
+$('#bLibImport').onclick = () => { const b = $('#libBox'); b.value = ''; b.classList.remove('hidden'); $('#libImpRow').classList.remove('hidden'); b.focus(); };
+$('#bLibImpGo').onclick = () => {
+  try {
+    const raw = $('#libBox').value.trim().replace(/^SDLIB:/, '');
+    const list = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    let n = 0;
+    list.forEach(it => { if (it && it.id && it.data && !libItem(it.id)) { LIB.push(it); n++; } });
+    persistLib(); $('#libBox').classList.add('hidden'); $('#libImpRow').classList.add('hidden');
+    toast(n ? `Added ${n} script${n === 1 ? '' : 's'}` : 'Those scripts are already here');
+  } catch (e) { toast("That code didn't read. Copy it again on the other device."); }
+};
 const wordsIn = t => String(t || '').split(/\s+/).filter(Boolean).length;
 const fmtT = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 $('#bWrite').onclick = () => writeScript();
@@ -1582,7 +1664,7 @@ Return ONLY JSON:
   try {
     const j = await ask(prompt, { modelTier: 'complex' });
     const cl = o => { if (typeof o === 'string') return cleanCopy(o); if (Array.isArray(o)) return o.map(cl); if (o && typeof o === 'object') { const r = {}; for (const k in o) r[k] = cl(o[k]); return r; } return o; };
-    SC = { data: cl(j), hook: 0, secs, fmt: fmtv, type, story: story || (SC && SC.story) };
+    SC = { data: cl(j), hook: 0, secs, fmt: fmtv, type, story: story || (SC && SC.story), id: mode === 'new' ? undefined : (SC && SC.id) };
     saveScript(); renderScript(); $('#scStatus').textContent = '';
   } catch (e) { $('#scStatus').textContent = e && e.code === 'rate_limited' ? 'Too many requests. Try again in a minute.' : 'Could not write that one. Try again.'; }
   btn.disabled = false;
@@ -1597,6 +1679,8 @@ function renderScript() {
   if (!SC) return;
   const d = SC.data; $('#scriptOut').classList.remove('hidden');
   $('#scTitle').textContent = d.title || 'Script';
+  const saved = !!libItem(SC.id);
+  $('#bScSave').textContent = saved ? 'Saved' : 'Save for later'; $('#bScSave').disabled = saved;
   $('#scHooks').innerHTML = d.hooks.map((h, i) => `<div class="hook ${i === SC.hook ? 'on' : ''}" data-i="${i}"><span class="mono" style="color:var(--gold);min-width:20px">${i + 1}</span><div><div class="say">${esc(h.say)}</div><div class="muted" style="font-size:12.5px;margin-top:3px">${esc(h.type || '')} · text: ${esc(h.on_screen || '')} · ${wordsIn(h.say)} words${wordsIn(h.say) > 15 ? ' <span style="color:var(--warn)">(over 15)</span>' : ''}</div></div></div>`).join('');
   $('#scHooks').querySelectorAll('.hook').forEach(el => el.onclick = () => { SC.hook = +el.dataset.i; saveScript(); renderScript(); });
   let t = 0; const L = scriptLines(); let total = 0;
@@ -1642,6 +1726,7 @@ $('#bScShoot').onclick = () => {
     };
   });
   S.plan = normalisePlan({ title: SC.data.title, acts, shots });
+  if (SC.id) S.plan.scriptId = SC.id;
   savePlan(); setView('plan'); renderPlan();
   toast('Shot list built from your script');
 };
@@ -1654,7 +1739,7 @@ function setView(v) {
   if (v !== 'shoot' && S.live.on) stopLive(true);
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { if (b.dataset.v === 'shoot' && !S.t0) return; setView(b.dataset.v); if (b.dataset.v === 'shoot') goTo(S.idx, false); });
-renderVoice(); if (SC) { renderScript(); }
+renderVoice(); renderLib(); if (SC) { renderScript(); }
 
 /* ---------------- Finish & export ---------------- */
 const slug = s => String(s).normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'shot';
@@ -1684,6 +1769,7 @@ function shotListText() {
   return lines.join('\n');
 }
 function finish() {
+  { const it = S.plan && libItem(S.plan.scriptId); if (it && fileList().length) { it.status = 'filmed'; persistLib(); } }
   clearInterval(S.timer);
   if (S.live.on) stopLive(true);
   show('done');
