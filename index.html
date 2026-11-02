@@ -142,7 +142,7 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
 .tabs button.on{background:var(--panel2);color:var(--ink)}
 .askrow{display:flex;gap:8px;margin-top:14px;width:min(440px,100%)}
 .askrow input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
-.phone.live video{transform:var(--vt,none);transform-origin:50% 50%;object-fit:contain}
+.phone.live video{transform:var(--vt,none);transform-origin:50% 50%;object-fit:cover}
 .phone.live canvas{transform:var(--mir,none)}
 .zoombar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
 .zoombar select{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12.5px;max-width:190px}
@@ -326,6 +326,7 @@ textarea.copy{width:100%;height:180px;background:var(--panel2);border:1px solid 
           <button class="btn hidden" id="bNext">Next shot</button>
         </div>
         <div class="zoombar hidden" id="zoomBar">
+          <span id="orientSeg" style="display:flex;gap:6px"><button class="chip" data-o="portrait">Portrait</button><button class="chip" data-o="landscape">Landscape</button></span>
           <select id="lensSel" aria-label="Camera lens" class="hidden"></select>
           <span id="zChips" style="display:flex;gap:6px"></span>
           <input type="range" id="zoomR" min="1" max="4" step="0.1" value="1" aria-label="Zoom">
@@ -760,7 +761,8 @@ async function handleTake(file, hint = {}) {
 
 function showTake(t) {
   const s = S.plan.shots.find(x => x.id === t.shotId);
-  const ph = $('#phone'); ph.style.aspectRatio = ''; ph.style.width = '';
+  const ph = $('#phone');
+  ph.style.aspectRatio = t.vw && t.vh ? `${t.vw} / ${t.vh}` : ''; ph.style.width = t.vw > t.vh ? 'min(460px, 94vw)' : '';
   if (!ph.querySelector('video') || ph.querySelector('video').src !== t.url) {
     ph.className = 'phone';
     ph.innerHTML = `<video muted playsinline loop autoplay src="${t.url}"></video><canvas></canvas><div class="verdict"></div>`;
@@ -1139,7 +1141,7 @@ Question: ${q}`, { modelTier: 'default' });
 };
 
 /* ---------------- Live camera ---------------- */
-S.live = { on: false, facing: 'user', deviceId: (() => { try { return localStorage.getItem('sd-lens'); } catch (e) { return null; } })() };
+S.live = { on: false, facing: 'user', orient: (() => { try { return localStorage.getItem('sd-orient') || 'portrait'; } catch (e) { return 'portrait'; } })(), deviceId: (() => { try { return localStorage.getItem('sd-lens'); } catch (e) { return null; } })() };
 const lc = document.createElement('canvas'); const lctx = lc.getContext('2d', { willReadFrequently: true });
 function grayFrom(cnv) {
   sc.width = 64; sc.height = Math.max(8, Math.round(64 * cnv.height / cnv.width));
@@ -1155,7 +1157,7 @@ async function startLive() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return liveBlocked();
   let stream;
   try {
-    const portrait = window.innerHeight > window.innerWidth;
+    const portrait = S.live.orient !== 'landscape';
     const vc = { width: { ideal: portrait ? 1080 : 1920 }, height: { ideal: portrait ? 1920 : 1080 }, aspectRatio: { ideal: portrait ? 9 / 16 : 16 / 9 }, zoom: true };
     if (S.live.deviceId) vc.deviceId = { exact: S.live.deviceId }; else vc.facingMode = S.live.facing;
     try { stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: true }); }
@@ -1220,6 +1222,18 @@ async function setZoom(z) {
   applyDigital(); updateZoomUI();
   try { localStorage.setItem('sd-zoom-' + Z.mode, Z.z); } catch (e) {}
 }
+function cropRect(vw, vh) {
+  const ar = S.live.orient === 'landscape' ? 16 / 9 : 9 / 16;
+  let cw = vw, ch = vh;
+  if (vw / vh > ar) cw = vh * ar; else ch = vw / ar;
+  const z = dz(); cw /= z; ch /= z;
+  return { x: (vw - cw) / 2, y: (vh - ch) / 2, w: cw, h: ch };
+}
+document.querySelectorAll('#orientSeg button').forEach(b => b.onclick = async () => {
+  if (S.live.orient === b.dataset.o) return;
+  S.live.orient = b.dataset.o; try { localStorage.setItem('sd-orient', S.live.orient); } catch (e) {}
+  if (S.live.on && S.live.state !== 'recording') { await stopLive(true); startLive(); }
+});
 function dz() { const Z = S.live.zoom; return Z && Z.mode === 'digital' ? Z.z : 1; }
 function applyDigital() {
   const ph = $('#phone'); if (!ph) return;
@@ -1256,11 +1270,12 @@ function mountLive() {
   const v = ph.querySelector('video'); v.srcObject = S.live.stream; v.play().catch(() => {});
   const fit = () => {
     if (!v.videoWidth) return;
-    const ar = v.videoWidth / v.videoHeight;
-    ph.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
-    ph.style.width = ar > 1 ? 'min(440px, 92vw)' : ar > .7 ? 'min(320px, 80vw)' : '';
-    const Z = S.live.zoom;
-    $('#camInfo').textContent = `Camera sends ${v.videoWidth}×${v.videoHeight}${ar > 1 ? ' (landscape)' : ''} · zoom ${Z ? (Z.mode === 'hw' ? 'lens' : 'digital') : ''}`;
+    const land = S.live.orient === 'landscape', camLand = v.videoWidth > v.videoHeight;
+    ph.style.aspectRatio = land ? '16 / 9' : '9 / 16';
+    ph.style.width = land ? 'min(460px, 94vw)' : '';
+    const c = cropRect(v.videoWidth, v.videoHeight), outShort = Math.round(Math.min(c.w, c.h) * dz());
+    $('#camInfo').textContent = `Recording ${land ? 'landscape 16:9' : 'portrait 9:16'} at about ${outShort}p` + (land !== camLand ? ` · turn the phone ${land ? 'sideways' : 'upright'} for full quality` : '');
+    document.querySelectorAll('#orientSeg button').forEach(b => b.classList.toggle('on', b.dataset.o === S.live.orient));
   };
   v.addEventListener('loadedmetadata', fit); v.addEventListener('resize', fit); fit();
   applyDigital();
@@ -1288,9 +1303,9 @@ async function liveLoop() {
   if (!S.live.on) return;
   const v = $('#lv');
   if (!v || v.readyState < 2 || !v.videoWidth || ['checking', 'countdown-hold'].includes(S.live.state)) { S.live.timer = setTimeout(liveLoop, 200); return; }
-  const vw = v.videoWidth, vh = v.videoHeight, k = 320 / Math.max(vw, vh);
-  lc.width = Math.round(vw * k); lc.height = Math.round(vh * k);
-  { const zf = dz(), cw = vw / zf, ch = vh / zf; lctx.drawImage(v, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, lc.width, lc.height); }
+  const vw = v.videoWidth, vh = v.videoHeight, cr = cropRect(vw, vh), k = 320 / Math.max(cr.w, cr.h);
+  lc.width = Math.round(cr.w * k); lc.height = Math.round(cr.h * k);
+  lctx.drawImage(v, cr.x, cr.y, cr.w, cr.h, 0, 0, lc.width, lc.height);
   let face = null, body = null;
   if (human) {
     try {
@@ -1418,12 +1433,14 @@ function startRecording(s) {
   const types = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
   const mime = types.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '';
   let recStream = S.live.stream, stopDraw = null;
-  if (dz() > 1.01) {
+  {
     const v = $('#lv'), rc = document.createElement('canvas');
-    const k = Math.min(1, 1920 / Math.max(v.videoWidth, v.videoHeight));
-    rc.width = Math.round(v.videoWidth * k); rc.height = Math.round(v.videoHeight * k);
+    const land = S.live.orient === 'landscape';
+    const c0 = cropRect(v.videoWidth, v.videoHeight);
+    const short = Math.min(1080, Math.max(360, Math.round(Math.min(c0.w, c0.h) * dz())));
+    rc.width = land ? Math.round(short * 16 / 9) : short; rc.height = land ? short : Math.round(short * 16 / 9);
     const rx = rc.getContext('2d'); let running = true;
-    const draw = () => { if (!running) return; const z = dz(), cw = v.videoWidth / z, ch = v.videoHeight / z; rx.drawImage(v, (v.videoWidth - cw) / 2, (v.videoHeight - ch) / 2, cw, ch, 0, 0, rc.width, rc.height); requestAnimationFrame(draw); };
+    const draw = () => { if (!running) return; const c = cropRect(v.videoWidth, v.videoHeight); rx.drawImage(v, c.x, c.y, c.w, c.h, 0, 0, rc.width, rc.height); requestAnimationFrame(draw); };
     draw();
     recStream = new MediaStream([...rc.captureStream(30).getVideoTracks(), ...S.live.stream.getAudioTracks()]);
     stopDraw = () => { running = false; recStream.getVideoTracks().forEach(t => t.stop()); };
